@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 pd.set_option('display.max_columns', 23)  # 设置显示的最大列数参数为a
 pd.set_option('display.width', 1500)  # 设置显示的宽度为500，防止输出内容被换行
@@ -6,8 +7,8 @@ pd.set_option('display.width', 1500)  # 设置显示的宽度为500，防止输�
 """
 EMPI患者主索引
 字段：
-1.肾小球总数
-2.球性硬化小球数
+1.肾小球总数        √
+2.球性硬化小球数     √
 3.新月体小球数目
 4.节段性硬化数目
 5.内皮细胞增生
@@ -20,8 +21,8 @@ EMPI患者主索引
 12.间质纤维化
 13.间质炎症细胞浸润
 14.间质血管病变
-15.诊断
-16.硬化小球比例
+15.诊断            √ 
+16.硬化小球比例     √
 17.节段硬化小球比例
 18.新月体小球比例
 
@@ -67,11 +68,57 @@ sz_data.loc[737, '肾小球总数'] = '9'
 print(sz_data[sz_data['肾小球总数'] == '0'])
 # （6）“肾小球总数”列值转为int型数值
 sz_data['肾小球总数'] = sz_data['肾小球总数'].astype(int)
+"""
+球性硬化小球数共有1种情况：
+a.41个肾小球中见7个球性废弃及1处节段硬化
+"""
 # 5.匹配--球性硬化小球数
+# （1）查看共有多少条记录出现关键词“废弃”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('废弃')]))  # 615
+# （2）提取“球性硬化小球数”
+sz_data['球性硬化小球数'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.extract('.*?(\d+)\D*废弃')
+# （3）将Nan值填充为0
+sz_data['球性硬化小球数'] = sz_data['球性硬化小球数'].fillna(0)
+# （4）“球性硬化小球数”列值转为int型数值
+sz_data['球性硬化小球数'] = sz_data['球性硬化小球数'].astype(int)
+
+"""
+新月体小球数目共有种出现情况：
+a.
+b.
+"""
 
 
+"""
+诊断共有3种出现情况：
+a.小结：……
+b.小结：1、……；\n2、……；\n3:、……；
+c.医生没有写小结
+"""
+# 匹配--诊断
+# （1）查看是否每条记录都有关键词“小结”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小结')]))  # 1191，说明有4条记录没有小结
+# （2）提取“诊断”
+sz_data['诊断'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.extract('.*?小结：([\d\D*|\D*]+)')
+# （3）查看多少Nan值
+print(sz_data[sz_data['诊断'].isna()])  # 4条记录为Nan，即医生有4条记录没有写小结
+# （4）将Nan值填充为“无”
+sz_data['诊断'] = sz_data['诊断'].fillna('无')
 
-len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('个肾小球')]) + len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('未见肾小球')])  # 1089、18
+"""
+计算指标
+硬化小球比例：球性硬化小球数/肾小球总数
+"""
+# 计算硬化小球比例
+# （1）硬化小球比例：球性硬化小球数/肾小球总数
+sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
+
+
+len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小结')]) + len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('未见肾小球')])  # 1089、18
 
 
 sz_data['测试1'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.extract('[，。？！,.?!]*(\d+|[一二三四五六七八九十]+)\D*小球')
@@ -110,6 +157,7 @@ tel = re.findall(r'\d{7,8}', s)
 test = pd.DataFrame({'name': [101, 102, 103, 104, 105, 106],
                      'dis': ['皮髓质肾组织1条,12个肾小球均已废弃。肾小管间质慢性病变重度1，大片肾小管萎缩、基膜增厚，未萎缩小管基膜亦增厚，灶性小管上皮刷状缘脱落、细胞扁平，偶见裸膜，间质纤维化+++，较多单个核细胞、浆细胞、偶见嗜酸性粒细胞浸润，并灶性聚集。偶见入球小动脉节段透明变性，部分小动脉内弹性膜分层，偶见小叶间动脉节段内膜增厚。',
                              '皮髓质肾组织1条。4肾小球均已废弃。肾小管间质慢性病变重2度',
+
                              '二十七个体积略增大肾小球，毛细血管袢开放',
                              '皮质肾组织1条。12小球中见1个球性废弃，余肾小球外周袢足细胞附着减少，胞浆稀少，系膜区节段轻度增宽，毛细血管袢开放尚好，',
                              '皮髓质肾组织2条，镜下大部分为髓质组织，仅在皮髓交界处见1个形态欠完整的肾小球，系膜区未见明1处肾小球',
@@ -118,7 +166,7 @@ test = pd.DataFrame({'name': [101, 102, 103, 104, 105, 106],
 
 test['肾小球总数'] = test['dis'].str.extract('[，。？！,.?!]*([一二三四五六七八九十]+)\D*小球')
 
-sz_data['对比结果'] = sz_data[['肾小球总数', '测试1']].apply(lambda x: x['肾小球总数'] == x['测试1'], axis=1)
+sz_data['对比结果'] = sz_data[['肾小球总数', '球性硬化小球数']].apply(lambda x: x['肾小球总数'] == x['球性硬化小球数'], axis=1)
 
 
 
