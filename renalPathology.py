@@ -204,7 +204,7 @@ sz_data['新月体小球数目'] = sz_data.apply(lambda x: max(x['新月体小�
 del sz_data['新月体123']
 
 """
-“节段性硬化数目”共有种出现情况
+“节段性硬化数目”共有10种出现情况
 a.皮髓质肾组织2条，经反复深切连片，镜下见6个肾小球，其中1个球趋向硬化，
 b.毛细血管袢开放尚好，其中1个球足细胞增生较明显，且毛细血管袢稍显扭曲，但未明显硬化
 c.皮质肾组织1条。14个肾小球中5个球性硬化，
@@ -241,6 +241,49 @@ sz_data['节段性硬化数目'] = sz_data['节段性硬化数目'].fillna(0)
 # （11）“球性硬化小球数”列值转为int型数值
 sz_data['节段性硬化数目'] = sz_data['节段性硬化数目'].astype(int)
 
+"""
+“内皮细胞增生”共有7种出现情况：
+a.内皮细胞未见明显肿胀
+b.内皮细胞肿胀
+c.2个球见节段内皮细胞增殖
+d.内皮细胞成对
+e.内皮细胞节段成对
+f.内皮细胞未见增殖
+g.未描述内皮细胞增生
+"""
+# 11.匹配--内皮细胞增生
+# （1）查看共有多少条记录出现关键词“内皮细胞”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('内皮细胞')]))  # 416
+# （2）查看共有多少条记录出现关键词“内皮细胞未见”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('内皮细胞未见')]))  # 201
+# （3）在所有出现“内皮细胞”的记录里增加数字1，便于后续正则提取
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('内皮细胞', '1内皮细胞'))
+# （4）将“内皮细胞未见”修改为“0内皮细胞”，便于后续正则提取
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('1内皮细胞未见', '0内皮细胞'))
+# （5）提取“内皮细胞增生”
+sz_data['内皮细胞增生'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.extract('.*?(\d+)内皮细胞')
+# （6）查看“内皮细胞增生”不为Nan值的记录有多少
+print(len(sz_data[sz_data['内皮细胞增生'].notna()]))  # 416
+# （7）将Nan值填充为0
+sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].fillna(0)
+# （11）“球性硬化小球数”列值转为int型数值
+sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].astype(int)
+
+"""
+“毛细血管管腔”共有10种出现情况
+
+"""
+# 12.匹配--毛细血管管腔
+
+
+
+"""
+“嗜复红物沉积”共有种出现情况：
+
+"""
+# 匹配--嗜复红物沉积
+# （1）查看共有多少条记录出现关键词“嗜复红物沉积”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜复红物沉积')]))  # 805
 
 
 """
