@@ -5,7 +5,7 @@ EMPI患者主索引
 2.球性硬化小球数     √
 3.新月体小球数目     √
 4.节段性硬化数目     √
-5.内皮细胞增生
+5.内皮细胞增生     √
 6.毛细血管管腔
 7.系膜区
 8.系膜细胞
@@ -270,20 +270,202 @@ sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].fillna(0)
 sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].astype(int)
 
 """
-“毛细血管管腔”共有10种出现情况
-
+“毛细血管管腔”共有19种出现情况
+a.未见袢坏死，
+b.毛细血管袢开放好
+c.毛细血管袢尚开放，
+d.毛细血管袢开放可，
+e.毛细血管袢开放差，
+f.毛细血管袢开放欠佳，
+g.毛细血管袢开放尚佳，
+h.毛细血管袢开放不佳，
+i.毛细血管袢扭曲、稍显僵硬，
+j.毛细血管袢开放，略显僵硬
+k.毛细血管袢开放、轻度僵硬，
+l.毛细血管袢皱缩易见，
+m.袢腔开放欠佳
+n.毛细血管袢受压、开放欠佳，
+o.袢腔狭窄，
+p.毛细血管袢开欠佳，
+q.毛细血管袢开放佳
+r.毛细血管袢1内皮细胞增殖、肿胀明显，
+s.未描述毛细血管管腔
 """
 # 12.匹配--毛细血管管腔
+# （1）查看共有多少条记录出现关键词“毛细血管袢”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢')]))  # 1115
+# （2）查看共有多少条记录出现关键词“毛细血管袢……开放”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢[\u4E00-\u9FA5]+开放')]))  # 46
+# （3）查看共有多少条记录出现关键词“毛细血管袢尚开放”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢尚开放')]))  # 46
+# 注：出现关键词“毛细血管袢……开放”刚好46条记录均为“毛细血管袢尚开放”
+# （4）查看共有多少条记录出现关键词“毛细血管袢……佳”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放[\u4E00-\u9FA5]+佳')]))  # 40
+# （5）查看共有多少条记录出现关键词“毛细血管袢欠佳”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放欠佳')]))  # 29
+# （6）查看共有多少条记录出现关键词“毛细血管袢不佳”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放不佳')]))  # 7
+# （7）查看共有多少条记录出现关键词“毛细血管袢尚佳”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚佳')]))  # 4
+# 注：出现关键词“毛细血管袢……佳”刚好40条记录包含了“毛细血管袢开放欠佳”、“毛细血管袢开放不佳”、“毛细血管袢开放尚佳”三种描述情况
+# （8）查看共有多少条记录出现关键词“袢腔狭窄”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('袢腔狭窄')]))  # 35
+# （9）将出现关键词“袢腔狭窄”的记录均改为“毛细血管袢开放差”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('袢腔狭窄', '毛细血管袢开放差'))
+# （8）查看共有多少条记录出现关键词“毛细血管袢开放，”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放，')]))  # 65
+# （9）查看共有多少条记录出现关键词“毛细血管袢开放。”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放。')]))  # 2
+# （10）查看共有多少条记录出现关键词“毛细血管袢开放可，”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放可，')]))  # 115
+# （11）查看共有多少条记录出现关键词“毛细血管袢开放、”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放、')]))  # 396
+# （12）查看共有多少条记录出现关键词“毛细血管袢开放尚可”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚可')]))  # 89
+# （13）查看共有多少条记录出现关键词“毛细血管袢开放尚好”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚好')]))  # 49
+# （14）查看共有多少条记录出现关键词“毛细血管袢开放差”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放差')]))  # 36
+#
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放好')]))  # 275
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放佳')]))  # 8
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢扭曲')]))  # 2
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('袢腔开放欠佳')]))  # 8
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('、开放欠佳')]))  # 3
+# （9）将出现关键词“开放欠佳”的记录均改为“毛细血管袢开放欠佳”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('开放欠佳', '毛细血管袢开放欠佳'))
+# （10）将出现关键词“僵硬”的记录均改为“毛细血管袢开放欠佳”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('僵硬', '毛细血管袢开放欠佳'))
+# 毛细血管袢开欠佳，
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('毛细血管袢开欠佳', '毛细血管袢开放欠佳'))
+
+print(len(sz_data[(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢') & sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('僵硬'))]))  # 2
+
+x = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢')]
+
+x[~(x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢扭曲') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚好') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放。') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢尚开放') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放欠佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放不佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放，') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放可，') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放、') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚可') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放差') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放好'))]
+
+
+"""
+“肾小管萎缩”共有种出现情况：
+a.
+b.
+c.
+d.
+e.
+f.
+g.
+h.未描述肾小管萎缩
+"""
+# 匹配--肾小管萎缩
+# （1）查看共有多少条记录出现“小管萎缩”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小管萎缩')]))  # 1150
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')]))  # 1150
+#
+
+"""
+‘间质纤维化“共有种出现情况：
+a.
+b.
+c.
+d.
+e.
+f.
+g.未描述间质纤维化
+"""
+# 匹配--间质纤维化
+# （1）查看共有多少条记录出现“纤维化”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1150
+
 
 
 
 """
-“嗜复红物沉积”共有种出现情况：
-
+“免疫复合物”共有13种出现情况：
+a.PASM-Masson：毛细血管袢腔内见嗜复红物。
+b.PASM-Masson：肾小球节段袢分层、嗜银强弱不一。
+c.PASM-Masson：偶见上皮侧毛刺状嗜银物。
+d.PASM-Masson：肾小球内皮下及系膜区少量嗜复红物沉积。
+e.PASM-Masson：阴性。
+f.PASM-Masson：嗜红物沉积不明显。
+g.PASM-Masson：不确切。
+h.PASM-Masson：。
+i.PASM-Masson：系膜区节段少量嗜复红物沉积。
+j.PASM-Masson：系膜区似见嗜复红物沉积。
+k.PASM-Masson：系膜区较多嗜复红物沉积。
+l.PASM-Masson：肾小球上皮侧较多嗜复红物沉积。
+m.未描述嗜复红物沉积
+n.PASM-Masson：内皮下及系膜区少量、上皮侧偶见嗜复红物沉积，
+o.PASM-Masson：上皮侧及系膜区节段嗜复红物沉积。
+p.PASM-Masson：肾小球上皮侧及系膜区少量嗜复红物沉积，
 """
 # 匹配--嗜复红物沉积
 # （1）查看共有多少条记录出现关键词“嗜复红物沉积”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜复红物沉积')]))  # 805
+# （2）查看共有多少条记录出现关键词“阴性”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('阴性')]))  # 354
+# （3）查看共有多少条记录出现关键词“不确切”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('不确切')]))  # 1
+# （4）查看共有多少记录出现关键词“嗜红物沉积”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜红物沉积')]))  # 2
+# （5）查看共有多少记录出现关键词“嗜银物”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜银物')]))  # 6
+# （6）查看共有多少记录出现关键词“嗜复红物”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜复红物')]))  # 813
+# （7）查看共有多少记录出现关键词“嗜银”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜银')]))  # 7
+# （8）将出现关键词“阴性”的记录修改为“0免疫复合物”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('阴性', '0免疫复合物，阴性'))
+# （9）将出现内容为“大量嗜复红物沉积”的记录修改为“1免疫复合物”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('大量嗜复红物沉积', '0免疫复合物'))
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧[\u4E00-\u9FA5]+嗜复红物沉积')]))  # 380
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧大量嗜复红物沉积')]))  # 66
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧少量嗜复红物沉积')]))  # 125
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧较多嗜复红物沉积')]))  # 113
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧较少嗜复红物沉积')]))  # 0
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧偶见嗜复红物沉积')]))  # 23
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区节段嗜复红物沉积')]))  # 2
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区少量嗜复红物沉积')]))  # 11
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区大量嗜复红物沉积')]))  # 1
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区较多嗜复红物沉积')]))  # 3
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区较少嗜复红物沉积')]))  # 0
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧节段嗜复红物沉积')]))  # 15
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧送检嗜复红物沉积')]))  # 1
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧疑似少量嗜复红物沉积')]))  # 2
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内少量嗜复红物沉积')]))  # 1
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内大量嗜复红物沉积')]))  # 2
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧弥漫嗜复红物沉积')]))  # 3
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧似见节段嗜复红物沉积')]))  # 1
+
+
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧嗜复红物沉积')]))  # 125
+
+s = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧[\u4E00-\u9FA5]+嗜复红物沉积')]
+s[~(s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧大量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧少量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧较多嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧偶见嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区节段嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区少量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区大量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区较多嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧节段嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧送检嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧疑似少量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内少量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内大量嗜复红物沉积') |
+    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧弥漫嗜复红物沉积')
+    )]
+
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜区[\u4E00-\u9FA5]+沉积')]))  # 7
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('偶见嗜碱性物')]))  # 12
+print(len(sz_data[(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('偶见嗜碱性物') & sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('阴性'))]))  # 12
 
 
 """
@@ -371,7 +553,7 @@ test = pd.DataFrame({'name': [101, 102, 103, 104, 105, 106, 107, 108, 109],
                              '皮质肾组织2条，34个肾小球中见3个球性废弃，1个细胞性、9个纤维性及5个纤维性新月体',
                              '皮髓质肾组织1条。36个肾小球中2个节段性新月体，其中1个为纤维性，另1个为细胞纤维性。',
                              '皮质肾组织1条，12个肾小球，体积轻度增大，可见5个细胞性新月体。',
-                             '皮质及皮髓质肾组织2条。18个肾小球中见7个纤维细胞性及2个细胞性新月体。',
+                             '皮质及皮髓质肾组织2条。18个肾小球中见7个纤维细胞性 及2个细胞性新月体。',
                              '皮质及皮髓质肾组织2条。18个肾小球中见5个细胞性及9个纤维细胞性新月体。',
                              '皮质和皮髓肾组织各1条，15个肾小球中3个球性废弃2个节段新月体形成。',
                              ]},
