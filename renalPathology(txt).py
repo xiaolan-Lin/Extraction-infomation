@@ -1,13 +1,27 @@
 import pandas as pd
 import numpy as np
 
+pd.set_option('display.max_columns', 23)  # 设置显示的最大列数参数为a
+pd.set_option('display.width', 1500)  # 设置显示的宽度为500，防止输出内容被换行
+pd.set_option('max_colwidth', 100)  # 设置显示列值的宽度为100
+pd.set_option('display.max_rows', None)  # 设置显示的行宽为全部，将所有行显示出来
+
+"""
+1.读取扫描文件，将其以xlsx文件保存
+"""
 file = "/home/lxl/pythonProject/Extraction-infomation/data/肾穿病理文本文件.txt"
+
+# pathology_data = pd.DataFrame(columns=[
+#     '病理号', '姓名', '性别', '年龄', '住院号', '送检日期', '医院', '科室', '病区', '临床诊断', '送检者',
+#     '肾小球总数', '球性硬化小球数', '新月体小球数目', '节段性硬化数目', '内皮细胞增生', '毛细血管管腔', '系膜区',
+#     '系膜细胞', '系膜基质', '免疫复合物', '肾小管萎缩', '间质纤维化', '间质炎症细胞浸润', '间质血管病变', '诊断',
+#     '硬化小球比例', '节段硬化小球比例', '新月体小球比例'
+# ])
 
 pathology_data = pd.DataFrame(columns=[
     '病理号', '姓名', '性别', '年龄', '住院号', '送检日期', '医院', '科室', '病区', '临床诊断', '送检者',
-    '肾小球总数', '球性硬化小球数', '新月体小球数目', '节段性硬化数目', '内皮细胞增生', '毛细血管管腔', '系膜区',
-    '系膜细胞', '系膜基质', '免疫复合物', '肾小管萎缩', '间质纤维化', '间质炎症细胞浸润', '间质血管病变', '诊断',
-    '硬化小球比例', '节段硬化小球比例', '新月体小球比例'
+    '肾小球总数', '球性硬化小球数', '肾小球囊', '节段性硬化数目', '内皮细胞', '管腔', '系膜区',
+    '嗜复红蛋白', '肾小管', '间质', '血管', '诊断'
 ])
 
 with open(file, encoding='utf8') as f:
@@ -16,63 +30,103 @@ with open(file, encoding='utf8') as f:
             content = line.split(':')[0].replace(' ', '')
             if content == '病理号':
                 pathology_data = pathology_data.append({'病理号': line.split(':')[1].split(' ')[0]}, ignore_index=True)
+                print(line.split(':')[1].split(' ')[0])
             if content == '姓名':
                 pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '姓名'] = \
-                    line.split(':')[1].split(' ')[0]
+                    line.split(':')[1].split(' ')[0].replace('\n', '')
                 pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '性别'] = \
-                    line.split(':')[2].split(' ')[0]
+                    line.split(':')[2].split(' ')[0].replace('\n', '')
                 pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '年龄'] = \
-                    line.split(':')[3].split(' ')[0]
+                    line.split(':')[3].split(' ')[0].replace('\n', '')
                 pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '住院号'] = \
-                    line.split(':')[4].split(' ')[0]
+                    line.split(':')[4].split(' ')[0].replace('\n', '')
                 pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '送检日期'] = \
-                    line.split(':')[5].split(' ')[0]
+                    line.split(':')[5].split(' ')[0].replace('\n', '')
             if content == '医院':
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '医院'] = \
-                    line.split(':')[1].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '科室'] = \
-                    line.split(':')[2].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '病区'] = \
-                    line.split(':')[3].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '临床诊断'] = \
-                    line.split(':')[4].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '送检者'] = \
-                    line.split(':')[5].split(' ')[0]
+                if len(line.split(':')) == 6:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '医院'] = \
+                        line.split(':')[1].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '科室'] = \
+                        line.split(':')[2].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '病区'] = \
+                        line.split(':')[3].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '临床诊断'] = \
+                        line.split(':')[4].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '送检者'] = \
+                        line.split(':')[5].split(' ')[0]
+                if len(line.split(':')) == 5:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '医院'] = \
+                        line.split(':')[1].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '科室'] = \
+                        line.split(':')[2].split(' ')[0]
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '病区'] = \
+                        line.split(':')[3].split(' ')[0].replace('\n', '')
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '临床诊断'] = \
+                        line.split(':')[4].split(' ')[0].replace('\n', '')
             if content == '肾小球':
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '肾小球总数'] = \
-                    line.split('数量 ')[1].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '球性硬化小球数'] = \
-                    line.split('球性硬化 ')[1].split(' ')[0]
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '节段性硬化数目'] = \
-                    line.split('节段性硬化 ')[1].split(' ')[0]
+                if pathology_data.iloc[len(pathology_data) - 1]['肾小球总数'] is np.nan:
+                    if '节段性硬化' in line:
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '肾小球总数'] = \
+                            line.split('数量 ')[1].split(' ')[0].replace('\n', '')
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '球性硬化小球数'] = \
+                            line.split('球性硬化 ')[1].split(' ')[0].replace('\n', '')
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '节段性硬化数目'] = \
+                            line.split('节段性硬化 ')[1].split(' ')[0].replace('\n', '')
+                    else:
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '肾小球总数'] = \
+                            line.split('数量 ')[1].split(' ')[0].replace('\n', '')
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '球性硬化小球数'] = \
+                            line.split('球性硬化 ')[1].split(' ')[0].replace('\n', '')
             if content == '肾小球囊':
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '新月体小球数目'] = \
-                    line.split('肾小球囊: ')[1]  # 新月体小球数目，此处将描述全部取出
+                if pathology_data.iloc[len(pathology_data) - 1]['肾小球囊'] is np.nan:
+                    if '肾小球囊: ' in line:
+                        pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '肾小球囊'] = \
+                            line.split('肾小球囊: ')[1].replace('\n', '')  # 新月体小球数目，此处将描述全部取出
             if content == '内皮细胞':
-                pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '内皮细胞增生'] = \
-                    line.split('内皮细胞:')[1]  # 内皮细胞增生，此处将描述全部取出
+                if pathology_data.iloc[len(pathology_data) - 1]['内皮细胞'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '内皮细胞'] = \
+                        line.split('内皮细胞:')[1].replace('\n', '')  # 内皮细胞增生，此处将描述全部取出
             if content == '管腔':
-                if pathology_data.iloc[len(pathology_data) - 1]['毛细血管管腔'] is np.nan:
-                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '毛细血管管腔'] = \
-                    line.split('管腔:')[1]  # 毛细血管管腔，此处将描述全部取出
+                if pathology_data.iloc[len(pathology_data) - 1]['管腔'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '管腔'] = \
+                        line.split('管腔:')[1].replace('\n', '')  # 毛细血管管腔，此处将描述全部取出
+            if content == '系膜区':
+                if pathology_data.iloc[len(pathology_data) - 1]['系膜区'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '系膜区'] = \
+                        line.split('系膜区:')[1].replace('\n', '')  # 系膜区、系膜细胞、系膜基质，此处将描述全部取出
+            if content == '嗜复红蛋白':
+                if pathology_data.iloc[len(pathology_data) - 1]['嗜复红蛋白'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '嗜复红蛋白'] = \
+                        line.split('嗜复红蛋白:')[1].replace('\n', '')  # 免疫复合物，此处将描述全部取出
+            if content == '肾小管':
+                if pathology_data.iloc[len(pathology_data) - 1]['肾小管'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '肾小管'] = \
+                        line.split('肾小管:')[1].replace('\n', '')  # 肾小管萎缩，此处将描述全部取出
+            if content == '间质':
+                if pathology_data.iloc[len(pathology_data) - 1]['间质'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '间质'] = \
+                        line.split('间质:')[1].replace('\n', '')  # 间质纤维化、间质炎症细胞浸润，此处将描述全部取出
+            if content == '血管':
+                if pathology_data.iloc[len(pathology_data) - 1]['血管'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '血管'] = \
+                        line.split('血管:')[1].replace('\n', '')  # 间质血管病变，此处将描述全部取出
+            if content == '诊断':
+                if pathology_data.iloc[len(pathology_data) - 1]['诊断'] is np.nan:
+                    pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '诊断'] = \
+                        line.split('诊断:')[1].split('诊断系数:')[0].replace(' ', '').replace('\n', '')  # 诊断，此处将描述全部取出
+
+pathology_data.head()
+# 将从txt文件提取到的信息保存为xlsx文件
+pathology_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/肾穿病理文本文件.xlsx",
+                        encoding='utf8', index=False)
+
+"""
+2.数据提取
+"""
+# 1.读取xlsx文件
+pathology_data = pd.read_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/肾穿病理文本文件.xlsx",
+                        encoding='utf8')
+# 2.
 
 
-管腔:    未见明显改变
-管腔:      未见明显改变
-
-
-
-
-
-
-
-
-
-
-
-
-
-x = 0
-if (x != 1) | (x != 2):
-    print(x)
 
