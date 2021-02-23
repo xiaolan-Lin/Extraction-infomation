@@ -126,7 +126,23 @@ pathology_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_dat
 # 1.读取xlsx文件
 pathology_data = pd.read_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/肾穿病理文本文件.xlsx",
                         encoding='utf8')
-# 2.
+# 2.匹配“肾小球囊”，提取出“新月体小球数目”
+# （1）查看“肾小球囊”列出现的可能情况
+print(pathology_data['肾小球囊'].value_counts())  # 144种，1种为Nan
+# （2）将“肾小球囊”列转换为str类型
+pathology_data['肾小球囊'] = pathology_data['肾小球囊'].astype(str)
+# （3）去除空格
+pathology_data['肾小球囊'] = pathology_data['肾小球囊'].apply(lambda x: x.replace(' ', ''))
+# （4）将“肾小球囊”列出现的“未见明显改变 1”修改为“未见明显改变”
+pathology_data.loc[585, '肾小球囊'] = '未见明显改变'
+# （5）将“肾小球囊”列出现的值为“未见明显改变”提取为0
+pathology_data['肾小球囊'] = pathology_data['肾小球囊'].apply(lambda x: x.replace('未见明显改变', '0'))
 
 
+
+
+
+
+
+pathology_data[(pathology_data['肾小球囊'].str.contains('未见明显改变') & pathology_data['肾小球囊'].str.contains('1'))]
 
