@@ -54,7 +54,7 @@ with open(file, encoding='utf8') as f:
                     pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '临床诊断'] = \
                         line.split(':')[4].split(' ')[0]
                     pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '送检者'] = \
-                        line.split(':')[5].split(' ')[0]
+                        line.split(':')[5].split(' ')[0].replace('\n', '')
                 if len(line.split(':')) == 5:
                     pathology_data.loc[pathology_data.index == (len(pathology_data) - 1), '医院'] = \
                         line.split(':')[1].split(' ')[0]
@@ -127,6 +127,11 @@ pathology_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_dat
 # 1.读取xlsx文件
 pathology_data = pd.read_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/肾穿病理文本文件.xlsx",
                         encoding='utf8')
+"""
+“肾小球囊”提取算法：
+将出现的数字全部提取，提取后相加即为“新月体小球数目”，
+若无出现数字，则将其标注为数字0。
+"""
 # 2.匹配“肾小球囊”，提取出“新月体小球数目”
 # （1）将“肾小球囊”列转换为str类型
 pathology_data['肾小球囊'] = pathology_data['肾小球囊'].astype(str)
@@ -156,7 +161,35 @@ pathology_data['新月体小球数目'] = pathology_data['新月体小球数目'
 pathology_data['新月体小球数目'] = pathology_data.apply(lambda x: max(x['新月体小球数目'], x['肾小球囊12']), axis=1)
 # （14）删除临时列“肾小球囊12”
 del pathology_data['肾小球囊12']
+# 总结：（新月体小球数目、出现该数目的记录总数）
+# 0     786
+# 2      52
+# 1      47
+# 3      27
+# 4      14
+# 5       9
+# 6       7
+# 8       7
+# 9       6
+# 7       5
+# 10      3
+# 14      2
+# 43      1
+# 11      1
+# 15      1
+# 20      1
+# 46      1
 
+"""
+“内皮细胞增生”提取算法：
+“轻”0
+“中”0
+“重”0
+“增生”1
+“增生”+“轻”1
+“增生”+“中”2
+“增生”+“重”3
+"""
 # 3.匹配“内皮细胞”，提取出“内皮细胞增生”
 # （1）将“内皮细胞”列转换为str类型
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].astype(str)
@@ -166,39 +199,67 @@ print(pathology_data['内皮细胞'].value_counts())  # 17种，1种为Nan
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace(' ', ''))
 # （4）去除内皮细胞中出现的数字，以免对后续提取造成干扰
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
-# （5）在“内皮细胞”列中找到“轻”、“中”、“重”，对应替换成需要提取的数字
+# （5）“内皮细胞”列中找到“增生”、“轻”、“中”、“重”，对应替换成需要提取的数字
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('增生', '1增生'))
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('轻', '0轻'))
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('中', '1中'))
 pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('重', '2重'))
-# （6）提取出“内皮细胞”列的存在两个数字的列值
-pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data['内皮细胞'].str.extract('(\d+)\D*(\d+)')
-# （7）将“内皮细胞1”、“内皮细胞2”两列的Nan值填充为0
-pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data[['内皮细胞1', '内皮细胞2']].fillna(0)
-# （8）将“内皮细胞1”、“内皮细胞2”两列的数值转换为int型
-pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data[['内皮细胞1', '内皮细胞2']].astype(int)
-# （9）将“内皮细胞1”、“肾小球囊2”两列的数值相加
-pathology_data['内皮细胞12'] = pathology_data['内皮细胞1'] + pathology_data['内皮细胞2']
-# （10）删除临时列“内皮细胞1”、“内皮细胞2”
-pathology_data = pathology_data.drop(pathology_data[['内皮细胞1', '内皮细胞2']], axis=1)
-# （11）提取出“内皮细胞”列的存在一个数字的列值
-pathology_data['内皮细胞增生'] = pathology_data['内皮细胞'].str.extract('(\d+)')
-# （12）将“内皮细胞增生”列的Nan值填充为0
-pathology_data['内皮细胞增生'] = pathology_data['内皮细胞增生'].fillna(0)
-# （13）将“内皮细胞增生”列的数值转换为int型
-pathology_data['内皮细胞增生'] = pathology_data['内皮细胞增生'].astype(int)
-# （14）将“内皮细胞增生”与“内皮细胞12”列值进行对比，若“内皮细胞增生”列中的值大于“内皮细胞12”对应的值，则替换“内皮细胞增生”列中的值，反之不替换。
-pathology_data['内皮细胞增生'] = pathology_data.apply(lambda x: max(x['内皮细胞增生'], x['内皮细胞12']), axis=1)
-# （15）删除临时列“内皮细胞12”
-del pathology_data['内皮细胞12']
+# （6）取出“内皮细胞”列中包含关键词“增生”的记录，创建新表neipi
+neipi = pathology_data[pathology_data['内皮细胞'].str.contains('增生')][['病理号', '内皮细胞']]  # 97
+# （7）提取出neipi表的“内皮细胞”列的存在两个数字的列值
+neipi[['内皮细胞1', '内皮细胞2']] = neipi['内皮细胞'].str.extract('(\d+)\D*(\d+)')
+# （8）将neipi表的“内皮细胞1”、“内皮细胞2”两列的Nan值填充为0
+neipi[['内皮细胞1', '内皮细胞2']] = neipi[['内皮细胞1', '内皮细胞2']].fillna(0)
+# （9）将neipi表的“内皮细胞1”、“内皮细胞2”两列的数值转换为int型
+neipi[['内皮细胞1', '内皮细胞2']] = neipi[['内皮细胞1', '内皮细胞2']].astype(int)
+# （10）将neipi表的“内皮细胞1”、“肾小球囊2”两列的数值相加
+neipi['内皮细胞12'] = neipi['内皮细胞1'] + neipi['内皮细胞2']
+# （11）删除neipi表的临时列“内皮细胞1”、“内皮细胞2”
+neipi = neipi.drop(neipi[['内皮细胞1', '内皮细胞2']], axis=1)
+# （12）提取出neipi表的“内皮细胞”列的存在一个数字的列值
+neipi['内皮细胞增生'] = neipi['内皮细胞'].str.extract('(\d+)')
+# （13）将neipi表的“内皮细胞增生”列的Nan值填充为0
+neipi['内皮细胞增生'] = neipi['内皮细胞增生'].fillna(0)
+# （14）将neipi表的“内皮细胞增生”列的数值转换为int型
+neipi['内皮细胞增生'] = neipi['内皮细胞增生'].astype(int)
+# （15）将neipi表的“内皮细胞增生”与“内皮细胞12”列值进行对比，若“内皮细胞增生”列中的值大于“内皮细胞12”对应的值，则替换“内皮细胞增生”列中的值，反之不替换。
+neipi['内皮细胞增生'] = neipi.apply(lambda x: max(x['内皮细胞增生'], x['内皮细胞12']), axis=1)
+# （16）删除临时列“内皮细胞12”
+del neipi['内皮细胞12']
+# （17）将neipi表与pathology_data表进行“病理号”及“内皮细胞”列外连接合并
+pathology_data = pd.merge(pathology_data, neipi, on=['病理号', '内皮细胞'], how='left').fillna(0)
+# 总结：
+# 0.0    873
+# 1.0     62
+# 2.0     24
+# 3.0     11
 
+"""
+“管腔”提取算法：
+
+"""
 # 4.匹配“管腔”，提取出“毛细血管管腔”
-# （1）将“内皮细胞”列转换为str类型
+# （1）将“管腔”列转换为str类型
 pathology_data['管腔'] = pathology_data['管腔'].astype(str)
-# （2）查看“内皮细胞”列出现的可能情况
+# （2）查看“管腔”列出现的可能情况
 print(pathology_data['管腔'].value_counts())  # 48种，1种为Nan
 # （3）去除空格
 pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace(' ', ''))
+# （4）去除管腔中出现的数字，以免对后续提取造成干扰
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在“管腔”列中找到关键词“狭窄”、“闭塞”、“轻”、“中”、“重”，对应替换成需要提取的数字
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace('狭窄', '1狭窄'))
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace('闭塞', '3闭塞'))
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace('轻', '0轻'))
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace('中', '1中'))
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace('重', '2重'))
+# （6）查看“管腔”列中出现有无既出现“狭窄”，又出现“闭塞”的记录
+print(len(pathology_data[pathology_data['管腔'].str.contains('狭窄') & pathology_data['管腔'].str.contains('闭塞')]))  # 0
+# （7）取出“管腔”列中包含关键词“狭窄”的记录，创建新表xiazhai
+xiazhai = pathology_data[pathology_data['管腔'].str.contains('狭窄')][['病理号', '管腔']]  # 238
+
+
+
 
 # 5.匹配“系膜区”，提取出“系膜区”
 # （1）将“系膜区”列转换为str类型
