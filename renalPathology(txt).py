@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from string import digits
 
 pd.set_option('display.max_columns', 23)  # 设置显示的最大列数参数为a
 pd.set_option('display.width', 1500)  # 设置显示的宽度为500，防止输出内容被换行
@@ -127,19 +128,117 @@ pathology_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_dat
 pathology_data = pd.read_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/肾穿病理文本文件.xlsx",
                         encoding='utf8')
 # 2.匹配“肾小球囊”，提取出“新月体小球数目”
-# （1）查看“肾小球囊”列出现的可能情况
-print(pathology_data['肾小球囊'].value_counts())  # 144种，1种为Nan
-# （2）将“肾小球囊”列转换为str类型
+# （1）将“肾小球囊”列转换为str类型
 pathology_data['肾小球囊'] = pathology_data['肾小球囊'].astype(str)
+# （2）查看“肾小球囊”列出现的可能情况
+print(pathology_data['肾小球囊'].value_counts())  # 144种，1种为Nan
 # （3）去除空格
 pathology_data['肾小球囊'] = pathology_data['肾小球囊'].apply(lambda x: x.replace(' ', ''))
 # （4）将“肾小球囊”列出现的“未见明显改变 1”修改为“未见明显改变”
 pathology_data.loc[585, '肾小球囊'] = '未见明显改变'
-# （5）将“肾小球囊”列出现的值为“未见明显改变”提取为0
-pathology_data['肾小球囊'] = pathology_data['肾小球囊'].apply(lambda x: x.replace('未见明显改变', '0'))
+# （5）提取出“肾小球囊”列的存在两个数字的列值
+pathology_data[['肾小球囊1', '肾小球囊2']] = pathology_data['肾小球囊'].str.extract('(\d+)\D*(\d+)')
+# （6）将“肾小球囊1”、“肾小球囊2”两列的Nan值填充为0
+pathology_data[['肾小球囊1', '肾小球囊2']] = pathology_data[['肾小球囊1', '肾小球囊2']].fillna(0)
+# （7）将“肾小球囊1”、“肾小球囊2”两列的数值转换为int型
+pathology_data[['肾小球囊1', '肾小球囊2']] = pathology_data[['肾小球囊1', '肾小球囊2']].astype(int)
+# （8）将“肾小球囊1”、“肾小球囊2”两列的数值相加
+pathology_data['肾小球囊12'] = pathology_data['肾小球囊1'] + pathology_data['肾小球囊2']
+# （9）删除临时列“肾小球囊1”、“肾小球囊2”
+pathology_data = pathology_data.drop(pathology_data[['肾小球囊1', '肾小球囊2']], axis=1)
+# （10）提取出“肾小球囊”列的存在一个数字的列值
+pathology_data['新月体小球数目'] = pathology_data['肾小球囊'].str.extract('(\d+)')
+# （11）将“新月体小球数目”列的Nan值填充为0
+pathology_data['新月体小球数目'] = pathology_data['新月体小球数目'].fillna(0)
+# （12）将“新月体小球数目”列的数值转换为int型
+pathology_data['新月体小球数目'] = pathology_data['新月体小球数目'].astype(int)
+# （13）将“新月体小球数目”与“肾小球囊12”列值进行对比，若“新月体小球数目”列中的值大于“肾小球囊12”对应的值，则替换“新月体小球数目”列中的值，反之不替换。
+pathology_data['新月体小球数目'] = pathology_data.apply(lambda x: max(x['新月体小球数目'], x['肾小球囊12']), axis=1)
+# （14）删除临时列“肾小球囊12”
+del pathology_data['肾小球囊12']
 
+# 3.匹配“内皮细胞”，提取出“内皮细胞增生”
+# （1）将“内皮细胞”列转换为str类型
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['内皮细胞'].value_counts())  # 17种，1种为Nan
+# （3）去除空格
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace(' ', ''))
+# （4）去除内皮细胞中出现的数字，以免对后续提取造成干扰
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在“内皮细胞”列中找到“轻”、“中”、“重”，对应替换成需要提取的数字
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('增生', '1增生'))
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('轻', '0轻'))
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('中', '1中'))
+pathology_data['内皮细胞'] = pathology_data['内皮细胞'].apply(lambda x: x.replace('重', '2重'))
+# （6）提取出“内皮细胞”列的存在两个数字的列值
+pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data['内皮细胞'].str.extract('(\d+)\D*(\d+)')
+# （7）将“内皮细胞1”、“内皮细胞2”两列的Nan值填充为0
+pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data[['内皮细胞1', '内皮细胞2']].fillna(0)
+# （8）将“内皮细胞1”、“内皮细胞2”两列的数值转换为int型
+pathology_data[['内皮细胞1', '内皮细胞2']] = pathology_data[['内皮细胞1', '内皮细胞2']].astype(int)
+# （9）将“内皮细胞1”、“肾小球囊2”两列的数值相加
+pathology_data['内皮细胞12'] = pathology_data['内皮细胞1'] + pathology_data['内皮细胞2']
+# （10）删除临时列“内皮细胞1”、“内皮细胞2”
+pathology_data = pathology_data.drop(pathology_data[['内皮细胞1', '内皮细胞2']], axis=1)
+# （11）提取出“内皮细胞”列的存在一个数字的列值
+pathology_data['内皮细胞增生'] = pathology_data['内皮细胞'].str.extract('(\d+)')
+# （12）将“内皮细胞增生”列的Nan值填充为0
+pathology_data['内皮细胞增生'] = pathology_data['内皮细胞增生'].fillna(0)
+# （13）将“内皮细胞增生”列的数值转换为int型
+pathology_data['内皮细胞增生'] = pathology_data['内皮细胞增生'].astype(int)
+# （14）将“内皮细胞增生”与“内皮细胞12”列值进行对比，若“内皮细胞增生”列中的值大于“内皮细胞12”对应的值，则替换“内皮细胞增生”列中的值，反之不替换。
+pathology_data['内皮细胞增生'] = pathology_data.apply(lambda x: max(x['内皮细胞增生'], x['内皮细胞12']), axis=1)
+# （15）删除临时列“内皮细胞12”
+del pathology_data['内皮细胞12']
 
+# 4.匹配“管腔”，提取出“毛细血管管腔”
+# （1）将“内皮细胞”列转换为str类型
+pathology_data['管腔'] = pathology_data['管腔'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['管腔'].value_counts())  # 48种，1种为Nan
+# （3）去除空格
+pathology_data['管腔'] = pathology_data['管腔'].apply(lambda x: x.replace(' ', ''))
 
+# 5.匹配“系膜区”，提取出“系膜区”
+# （1）将“系膜区”列转换为str类型
+pathology_data['系膜区'] = pathology_data['系膜区'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['系膜区'].value_counts())  # 137种，1种为Nan
+# （3）去除空格
+pathology_data['系膜区'] = pathology_data['系膜区'].apply(lambda x: x.replace(' ', ''))
+
+# 6.匹配“嗜复红蛋白”，提取出“免疫复合物”
+# （1）将“嗜复红蛋白”列转换为str类型
+pathology_data['嗜复红蛋白'] = pathology_data['嗜复红蛋白'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['嗜复红蛋白'].value_counts())  # 28种，1种为Nan
+# （3）去除空格
+pathology_data['嗜复红蛋白'] = pathology_data['嗜复红蛋白'].apply(lambda x: x.replace(' ', ''))
+
+# 7.匹配“肾小管”，提取出“肾小管萎缩”
+# （1）将“肾小管”列转换为str类型
+pathology_data['肾小管'] = pathology_data['肾小管'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['肾小管'].value_counts())  # 87种，1种为Nan
+# （3）去除空格
+pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace(' ', ''))
+
+# 8.匹配“间质”，提取出“间质纤维化”
+# （1）将“间质”列转换为str类型
+pathology_data['间质'] = pathology_data['间质'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['间质'].value_counts())  # 76种，1种为Nan
+# （3）去除空格
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace(' ', ''))
+
+# 9.匹配“血管”，提取出“间质血管病变”
+# （1）将“血管”列转换为str类型
+pathology_data['血管'] = pathology_data['血管'].astype(str)
+# （2）查看“内皮细胞”列出现的可能情况
+print(pathology_data['血管'].value_counts())  # 45种，1种为Nan
+# （3）去除空格
+pathology_data['血管'] = pathology_data['血管'].apply(lambda x: x.replace(' ', ''))
 
 
 
