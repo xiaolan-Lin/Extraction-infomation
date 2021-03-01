@@ -350,7 +350,10 @@ pathology_data['免疫复合物'] = pathology_data.apply(lambda x: max(x['免疫
 
 """
 “肾小管”提取规则：
-
+“轻”提取1
+“中”提取2
+“重”提取3
+“多灶性萎缩／80%”提取80%
 """
 # 7.匹配“肾小管”，提取出“肾小管萎缩”
 # （1）将“肾小管”列转换为str类型
@@ -359,6 +362,36 @@ pathology_data['肾小管'] = pathology_data['肾小管'].astype(str)
 print(pathology_data['肾小管'].value_counts())  # 87种，1种为Nan
 # （3）去除空格
 pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace(' ', ''))
+# （4）提取出“肾小管”列的存在一个数字的列值
+pathology_data['肾小管萎缩'] = pathology_data['肾小管'].str.extract('(\d+)')
+# （8）在“肾小管”中找到关键字“轻”、“中”、“重”，对应替换成需要提取的数字
+pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('轻', '1轻'))
+pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('中', '2中'))
+pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('重', '3重'))
+# （7）取出“肾小管萎缩”列中位Nan值的记录，创建表shenxiaoguan
+shenxiaoguan = pathology_data[pathology_data['肾小管萎缩'].isna()][['病理号', '肾小管']]
+# （9）在shenxiaoguan表的“肾小管”列中提取出数字
+shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管'].str.extract('(\d+)')
+# （6）将shenxiaoguan表中的“肾小管萎缩1”列的Nan值填充为0
+shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管萎缩1'].fillna(0)
+# （7）将shenxiaoguan表中的“肾小管萎缩1”列的数值转换为int型
+shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管萎缩1'].astype(int)
+# （6）将“肾小管萎缩”列的Nan值填充为0
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].fillna(0)
+# （7）将“肾小管萎缩”列的数值转换为int型
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].astype(int)
+# （10）将shenxiaoguan表与pathology_data通过病理号进行外连接
+pathology_data = pd.merge(pathology_data, shenxiaoguan, on=['病理号', '肾小管'], how='left').fillna(0)
+# （）将“肾小管萎缩”列值添加%
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].astype(str) + '%'
+# （16）将“肾小管萎缩”与“肾小管萎缩1”列值进行对比，若“肾小管萎缩”列中的值大于“肾小管萎缩1”对应的值，则替换“肾小管萎缩”列中的值，反之不替换。
+pathology_data['肾小管萎缩'] = pathology_data.apply(lambda x: max(int(x['肾小管萎缩'].replace('%', '')), x['肾小管萎缩1']), axis=1)
+# （5）将“肾小管萎缩”列中的0%更改为0
+pathology_data.loc[pathology_data['肾小管萎缩'] == '0%', '肾小管萎缩'] = 0
+
+test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': [0, np.nan, 75]})
+test1 = pd.DataFrame({'num': [101], 'name': ['lei'], 'work1': [2]})
+t = pd.merge(test, test1, on=['num', 'name'], how='left').fillna(0)
 
 # 8.匹配“间质”，提取出“间质纤维化”
 # （1）将“间质”列转换为str类型
