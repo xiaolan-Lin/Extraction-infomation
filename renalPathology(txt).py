@@ -364,34 +364,64 @@ print(pathology_data['肾小管'].value_counts())  # 87种，1种为Nan
 pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace(' ', ''))
 # （4）提取出“肾小管”列的存在一个数字的列值
 pathology_data['肾小管萎缩'] = pathology_data['肾小管'].str.extract('(\d+)')
-# （8）在“肾小管”中找到关键字“轻”、“中”、“重”，对应替换成需要提取的数字
+# （5）在“肾小管”中找到关键字“轻”、“中”、“重”，对应替换成需要提取的数字
 pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('轻', '1轻'))
 pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('中', '2中'))
 pathology_data['肾小管'] = pathology_data['肾小管'].apply(lambda x: x.replace('重', '3重'))
-# （7）取出“肾小管萎缩”列中位Nan值的记录，创建表shenxiaoguan
+# （6）取出“肾小管萎缩”列中位Nan值的记录，创建表shenxiaoguan
 shenxiaoguan = pathology_data[pathology_data['肾小管萎缩'].isna()][['病理号', '肾小管']]
-# （9）在shenxiaoguan表的“肾小管”列中提取出数字
+# （7）在shenxiaoguan表的“肾小管”列中提取出数字
 shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管'].str.extract('(\d+)')
-# （6）将shenxiaoguan表中的“肾小管萎缩1”列的Nan值填充为0
-shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管萎缩1'].fillna(0)
-# （7）将shenxiaoguan表中的“肾小管萎缩1”列的数值转换为int型
-shenxiaoguan['肾小管萎缩1'] = shenxiaoguan['肾小管萎缩1'].astype(int)
-# （6）将“肾小管萎缩”列的Nan值填充为0
-pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].fillna(0)
-# （7）将“肾小管萎缩”列的数值转换为int型
-pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].astype(int)
+# （8）将“肾小管萎缩”列的Nan值填充为0
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].fillna('0')
+# （9）将“肾小管萎缩”列值添加%
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'] + '%'
 # （10）将shenxiaoguan表与pathology_data通过病理号进行外连接
-pathology_data = pd.merge(pathology_data, shenxiaoguan, on=['病理号', '肾小管'], how='left').fillna(0)
-# （）将“肾小管萎缩”列值添加%
-pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].astype(str) + '%'
-# （16）将“肾小管萎缩”与“肾小管萎缩1”列值进行对比，若“肾小管萎缩”列中的值大于“肾小管萎缩1”对应的值，则替换“肾小管萎缩”列中的值，反之不替换。
-pathology_data['肾小管萎缩'] = pathology_data.apply(lambda x: max(int(x['肾小管萎缩'].replace('%', '')), x['肾小管萎缩1']), axis=1)
-# （5）将“肾小管萎缩”列中的0%更改为0
-pathology_data.loc[pathology_data['肾小管萎缩'] == '0%', '肾小管萎缩'] = 0
+pathology_data = pd.merge(pathology_data, shenxiaoguan, on=['病理号', '肾小管'], how='left')
+# （11）当“肾小管萎缩”列值为0%时，“肾小管萎缩1”的值替代“肾小管萎缩”的值
+for i in range(len(pathology_data)):
+    if pathology_data.iloc[i]['肾小管萎缩'] == '0%':
+        pathology_data.loc[i, '肾小管萎缩'] = pathology_data.iloc[i]['肾小管萎缩1']
+# （12）删除“肾小管萎缩1”列
+del pathology_data['肾小管萎缩1']
+# （13）将“肾小管萎缩”列的Nan值填充为0
+pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].fillna('0')
+# 总结：（肾小管萎缩、记录总数）
+# 0      567
+# 1       52
+# 5%      46
+# 10%     42
+# 15%     41
+# 3%      23
+# 25%     21
+# 8%      21
+# 20%     16
+# 80%     15
+# 2%      13
+# 75%     13
+# 60%     11
+# 30%     11
+# 50%     10
+# 45%      9
+# 40%      9
+# 3        7
+# 85%      7
+# 70%      6
+# 2        6
+# 1%       5
+# 55%      5
+# 35%      4
+# 90%      4
+# 6%       3
+# 95%      1
+# 98%      1
+# 88%      1
 
-test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': [0, np.nan, 75]})
+
+test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': ['0%', '0%', 75]})
 test1 = pd.DataFrame({'num': [101], 'name': ['lei'], 'work1': [2]})
-t = pd.merge(test, test1, on=['num', 'name'], how='left').fillna(0)
+t = pd.merge(test, test1, on=['num', 'name'], how='left')
+t['work'] = t['work'].astype(str) + '%'
 
 # 8.匹配“间质”，提取出“间质纤维化”
 # （1）将“间质”列转换为str类型
