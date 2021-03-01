@@ -13,7 +13,7 @@ EMPI患者主索引
 10.免疫复合物         √
 11.肾小管萎缩         √
 12.间质纤维化         √
-13.间质炎症细胞浸润
+13.间质炎症细胞浸润     √
 14.间质血管病变         ×
 15.诊断             √
 16.硬化小球比例      √
@@ -316,10 +316,7 @@ pathology_data.loc[pathology_data['管腔'].str.contains('闭塞'), '毛细血�
 # 3.0    114
 # 2.0     27
 
-"""
-“系膜区”提取规则：
 
-"""
 # 5.匹配“系膜区”，提取出“系膜区”
 # （1）将“系膜区”列转换为str类型
 pathology_data['系膜区'] = pathology_data['系膜区'].astype(str)
@@ -565,13 +562,45 @@ print(pathology_data['血管'].value_counts())  # 45种，1种为Nan
 pathology_data['血管'] = pathology_data['血管'].apply(lambda x: x.replace(' ', ''))
 
 
+"""
+计算指标
+硬化小球比例：球性硬化小球数/肾小球总数
+节段硬化小球比例：节段性硬化数目/肾小球总数
+新月体小球比例：新月体小球数目/肾小球总数
+"""
+# 11.计算硬化小球比例
+# （1）硬化小球比例：球性硬化小球数/肾小球总数
+pathology_data['球性硬化小球数'] = pathology_data['球性硬化小球数'].astype(str)
+pathology_data['球性硬化小球数'] = pathology_data['球性硬化小球数'].apply(lambda x: x.replace(',', ''))
+pathology_data['球性硬化小球数'] = pathology_data['球性硬化小球数'].astype(int)
+pathology_data['肾小球总数'] = pathology_data['肾小球总数'].astype(str)
+pathology_data['肾小球总数'] = pathology_data['肾小球总数'].apply(lambda x: x.split('(')[0])
+pathology_data['肾小球总数'] = pathology_data['肾小球总数'].astype(int)
+pathology_data['硬化小球比例'] = pathology_data['球性硬化小球数'] / pathology_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+pathology_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+pathology_data['硬化小球比例'] = pathology_data['硬化小球比例'].fillna(0)
 
+# 12.计算节段硬化小球比例
+# （1）节段硬化小球比例：节段性硬化数目/肾小球总数
+pathology_data['节段硬化小球比例'] = pathology_data['节段性硬化数目'] / pathology_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+pathology_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+pathology_data['节段硬化小球比例'] = pathology_data['节段硬化小球比例'].fillna(0)
 
+# 13.计算新月体小球比例
+# （1）新月体小球比例：新月体小球数目/肾小球总数
+pathology_data['新月体小球比例'] = pathology_data['新月体小球数目'] / pathology_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+pathology_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+pathology_data['新月体小球比例'] = pathology_data['新月体小球比例'].fillna(0)
 
-test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': ['0%', '0%', 75]})
-test1 = pd.DataFrame({'num': [101], 'name': ['lei'], 'work1': [2]})
-t = pd.merge(test, test1, on=['num', 'name'], how='left')
-t['work'] = t['work'].astype(str) + '%'
-
-pathology_data[(pathology_data['肾小球囊'].str.contains('未见明显改变') & pathology_data['肾小球囊'].str.contains('1'))]
-
+# 14.保存处理后的文件
+# （1）删除原始列
+pathology_data = pathology_data.drop(pathology_data[['肾小球囊', '内皮细胞', '管腔', '嗜复红蛋白', '肾小管', '间质']], axis=1)
+# （2）保存为xlsx文件
+pathology_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_肾穿病理文本文件.xlsx",
+                        encoding='utf8', index=False)
