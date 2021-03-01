@@ -1,3 +1,30 @@
+"""
+EMPI患者主索引
+字段：
+1.肾小球总数        √
+2.球性硬化小球数     √
+3.新月体小球数目     √
+4.节段性硬化数目     √
+5.内皮细胞增生     √
+6.毛细血管管腔     √
+7.系膜区            ×
+8.系膜细胞           ×
+9.系膜基质          ×
+10.免疫复合物         √
+11.肾小管萎缩         √
+12.间质纤维化         √
+13.间质炎症细胞浸润
+14.间质血管病变         ×
+15.诊断             √
+16.硬化小球比例      √
+17.节段硬化小球比例   √
+18.新月体小球比例     √
+
+计算指标
+硬化小球比例：球性硬化小球数/肾小球总数
+节段硬化小球比例：节段性硬化数目/肾小球总数
+新月体小球比例：新月体小球数目/肾小球总数
+"""
 import pandas as pd
 import numpy as np
 from string import digits
@@ -341,6 +368,8 @@ pathology_data['免疫复合物'] = pathology_data['免疫复合物'].fillna(0)
 pathology_data['免疫复合物'] = pathology_data['免疫复合物'].astype(int)
 # （16）将“免疫复合物”与“嗜复红蛋白12”列值进行对比，若“免疫复合物”列中的值大于“嗜复红蛋白12”对应的值，则替换“免疫复合物”列中的值，反之不替换。
 pathology_data['免疫复合物'] = pathology_data.apply(lambda x: max(x['免疫复合物'], x['嗜复红蛋白12']), axis=1)
+# （17）删除“嗜复红蛋白12”列
+del pathology_data['嗜复红蛋白12']
 # 总结：（免疫复合物、记录数量）
 # 0    685
 # 2    212
@@ -417,12 +446,28 @@ pathology_data['肾小管萎缩'] = pathology_data['肾小管萎缩'].fillna('0'
 # 98%      1
 # 88%      1
 
-
-test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': ['0%', '0%', 75]})
-test1 = pd.DataFrame({'num': [101], 'name': ['lei'], 'work1': [2]})
-t = pd.merge(test, test1, on=['num', 'name'], how='left')
-t['work'] = t['work'].astype(str) + '%'
-
+"""
+“间质”提取规则：（间质纤维化\间质炎症细胞浸润）
+“轻”提取1
+“中”提取2
+“重”提取3
+“纤维化”提取1
+“纤维化”+“轻”1
+“纤维化”+“中”2
+“纤维化”+“重”3
+----------------
+“轻”提取1
+“中”提取2
+“重”提取3
+“单个核细胞浸润”提取1
+“单个核细胞浸润”+“轻”1
+“单个核细胞浸润”+“中”2
+“单个核细胞浸润”+“重”3
+“淋巴细胞浸润”提取1
+“淋巴细胞浸润”+“轻”1
+“淋巴细胞浸润”+“中”2
+“淋巴细胞浸润”+“重”3
+"""
 # 8.匹配“间质”，提取出“间质纤维化”
 # （1）将“间质”列转换为str类型
 pathology_data['间质'] = pathology_data['间质'].astype(str)
@@ -430,8 +475,88 @@ pathology_data['间质'] = pathology_data['间质'].astype(str)
 print(pathology_data['间质'].value_counts())  # 76种，1种为Nan
 # （3）去除空格
 pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace(' ', ''))
+# （4）去除间质中出现的数字，以免对后续提取造成干扰
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在“间质”列中找到关键词“纤维化”、“轻”、“中”、“重”，对应替换成需要提取的数字
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('纤维化', '1纤维化'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('轻', '0轻'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('中', '1中'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('重', '2重'))
+# （6）取出“间质”列中包含关键词“纤维化”的记录，创建新表xianweihua
+xianweihua = pathology_data[pathology_data['间质'].str.contains('纤维化')][['病理号', '间质']]  # 305
+# （7）提取出xianweihua表的“间质”列的存在两个数字的列值
+xianweihua[['间质1', '间质2']] = xianweihua['间质'].str.extract('(\d+)\D*(\d+)')
+# （8）将xianweihua表的“间质1”、“间质2”两列的Nan值填充为0
+xianweihua[['间质1', '间质2']] = xianweihua[['间质1', '间质2']].fillna(0)
+# （9）将xianweihua表的“间质1”、“间质2”两列的数值转换为int型
+xianweihua[['间质1', '间质2']] = xianweihua[['间质1', '间质2']].astype(int)
+# （10）将xianweihua表的“间质1”、“间质2”两列的数值相加
+xianweihua['间质12'] = xianweihua['间质1'] + xianweihua['间质2']
+# （11）删除xianweihua表的临时列“间质1”、“间质2”
+xianweihua = xianweihua.drop(xianweihua[['间质1', '间质2']], axis=1)
+# （12）提取出xianweihua表的“间质”列的存在一个数字的列值
+xianweihua['间质纤维化'] = xianweihua['间质'].str.extract('(\d+)')
+# （13）将xianweihua表的“间质纤维化”列的Nan值填充为0
+xianweihua['间质纤维化'] = xianweihua['间质纤维化'].fillna(0)
+# （14）将xianweihua表的“间质纤维化”列的数值转换为int型
+xianweihua['间质纤维化'] = xianweihua['间质纤维化'].astype(int)
+# （15）将xianweihua表的“间质纤维化”与“间质12”列值进行对比，若“间质纤维化”列中的值大于“间质12”对应的值，则替换“间质纤维化”列中的值，反之不替换。
+xianweihua['间质纤维化'] = xianweihua.apply(lambda x: max(x['间质纤维化'], x['间质12']), axis=1)
+# （16）删除临时列“间质12”
+del xianweihua['间质12']
+# （17）将xianweihua表与pathology_data表进行“病理号”及“间质”列外连接合并
+pathology_data = pd.merge(pathology_data, xianweihua, on=['病理号', '间质'], how='left').fillna(0)
+# 总结：（间质纤维化、记录数量）
+# 0.0    665
+# 1.0    147
+# 2.0     84
+# 3.0     74
 
-# 9.匹配“血管”，提取出“间质血管病变”
+# 9.匹配“间质”，提取出“间质炎症细胞浸润”
+# （1）去除间质中出现的数字，以免对后续提取造成干扰
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （2）在“间质”列中找到关键词“纤维化”、“轻”、“中”、“重”，对应替换成需要提取的数字
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('单个核细胞浸润', '1单个核细胞浸润'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('淋巴细胞浸润', '1淋巴细胞浸润'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('轻', '0轻'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('中', '1中'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('重', '2重'))
+pathology_data['间质'] = pathology_data['间质'].apply(lambda x: x.replace('大量', '2大量'))
+# （3）查看“间质”列中出现有无既出现“单个核细胞浸润”，又出现“淋巴细胞浸润”的记录
+print(len(pathology_data[pathology_data['间质'].str.contains('单个核细胞浸润') & pathology_data['间质'].str.contains('淋巴细胞浸润')]))  # 0
+# （6）取出“间质”列中包含关键词“单个核细胞浸润”、“淋巴细胞浸润”的记录，创建新表xibaojinrun
+xibaojinrun = pathology_data[pathology_data['间质'].str.contains('单个核细胞浸润') |
+                            pathology_data['间质'].str.contains('淋巴细胞浸润')][['病理号', '间质']]  # 209
+# （7）提取出xibaojinrun表的“间质”列的存在两个数字的列值
+xibaojinrun[['间质1', '间质2']] = xibaojinrun['间质'].str.extract('(\d+)\D*(\d+)')
+# （8）将xibaojinrun表的“间质1”、“间质2”两列的Nan值填充为0
+xibaojinrun[['间质1', '间质2']] = xibaojinrun[['间质1', '间质2']].fillna(0)
+# （9）将xibaojinrun表的“间质1”、“间质2”两列的数值转换为int型
+xibaojinrun[['间质1', '间质2']] = xibaojinrun[['间质1', '间质2']].astype(int)
+# （10）将xibaojinrun表的“间质1”、“间质2”两列的数值相加
+xibaojinrun['间质12'] = xibaojinrun['间质1'] + xibaojinrun['间质2']
+# （11）删除xxibaojinrun表的临时列“间质1”、“间质2”
+xibaojinrun = xibaojinrun.drop(xibaojinrun[['间质1', '间质2']], axis=1)
+# （12）提取出xibaojinrun表的“间质”列的存在一个数字的列值
+xibaojinrun['间质炎症细胞浸润'] = xibaojinrun['间质'].str.extract('(\d+)')
+# （13）将xibaojinrun表的“间质炎症细胞浸润”列的Nan值填充为0
+xibaojinrun['间质炎症细胞浸润'] = xibaojinrun['间质炎症细胞浸润'].fillna(0)
+# （14）将xibaojinrun表的“间质炎症细胞浸润”列的数值转换为int型
+xibaojinrun['间质炎症细胞浸润'] = xibaojinrun['间质炎症细胞浸润'].astype(int)
+# （15）将xibaojinrun表的“间质炎症细胞浸润”与“间质12”列值进行对比，若“间质炎症细胞浸润”列中的值大于“间质12”对应的值，则替换“间质炎症细胞浸润”列中的值，反之不替换。
+xibaojinrun['间质炎症细胞浸润'] = xibaojinrun.apply(lambda x: max(x['间质炎症细胞浸润'], x['间质12']), axis=1)
+# （16）删除临时列“间质12”
+del xibaojinrun['间质12']
+# （17）将xibaojinrun表与pathology_data表进行“病理号”及“间质”列外连接合并
+pathology_data = pd.merge(pathology_data, xibaojinrun, on=['病理号', '间质'], how='left').fillna(0)
+# 总结：（间质炎症细胞浸润、记录数量）
+# 0.0    761
+# 1.0    130
+# 2.0     47
+# 3.0     32
+
+
+# 10.匹配“血管”，提取出“间质血管病变”
 # （1）将“血管”列转换为str类型
 pathology_data['血管'] = pathology_data['血管'].astype(str)
 # （2）查看“内皮细胞”列出现的可能情况
@@ -441,6 +566,12 @@ pathology_data['血管'] = pathology_data['血管'].apply(lambda x: x.replace(' 
 
 
 
+
+
+test = pd.DataFrame({'num': [100, 101, 102], 'name': ['lily', 'lei', 'can'], 'work': ['0%', '0%', 75]})
+test1 = pd.DataFrame({'num': [101], 'name': ['lei'], 'work1': [2]})
+t = pd.merge(test, test1, on=['num', 'name'], how='left')
+t['work'] = t['work'].astype(str) + '%'
 
 pathology_data[(pathology_data['肾小球囊'].str.contains('未见明显改变') & pathology_data['肾小球囊'].str.contains('1'))]
 
