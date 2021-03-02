@@ -6,7 +6,7 @@ EMPI患者主索引
 3.新月体小球数目     √
 4.节段性硬化数目     √
 5.内皮细胞增生     √
-6.毛细血管管腔
+6.毛细血管管腔     √
 7.系膜区
 8.系膜细胞
 9.系膜基质
@@ -28,6 +28,7 @@ EMPI患者主索引
 
 import pandas as pd
 import numpy as np
+from string import digits
 
 pd.set_option('display.max_columns', 23)  # 设置显示的最大列数参数为a
 pd.set_option('display.width', 1500)  # 设置显示的宽度为500，防止输出内容被换行
@@ -241,6 +242,7 @@ sz_data['节段性硬化数目'] = sz_data['节段性硬化数目'].fillna(0)
 # （11）“球性硬化小球数”列值转为int型数值
 sz_data['节段性硬化数目'] = sz_data['节段性硬化数目'].astype(int)
 
+
 """
 “内皮细胞增生”共有7种出现情况：
 a.内皮细胞未见明显肿胀
@@ -268,15 +270,17 @@ print(len(sz_data[sz_data['内皮细胞增生'].notna()]))  # 416
 sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].fillna(0)
 # （11）“球性硬化小球数”列值转为int型数值
 sz_data['内皮细胞增生'] = sz_data['内皮细胞增生'].astype(int)
-
+# 总结：（内皮细胞增生、记录数量）
+# 0    980
+# 1    215
 
 
 """
 “毛细血管管腔”共有19种出现情况
-a.未见袢坏死，（开放佳）
+a.未见袢坏死，（与开放性无关）
 b.袢腔开放欠佳
 c.袢腔开放不佳
-d.袢腔狭窄，（开放差）
+d.袢腔狭窄，（与开放性无关）
 e.毛细血管袢开放好
 f.毛细血管袢尚开放，
 g.毛细血管袢开放可，
@@ -296,72 +300,52 @@ s.未描述毛细血管管腔
 # 12.匹配--毛细血管管腔
 # （1）查看共有多少条记录出现关键词“毛细血管袢”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢')]))  # 1115
-# （2）将出现“未见袢坏死”的记录修改为“毛细血管袢开放佳”
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('未见袢坏死', '毛细血管袢开放佳'))
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace(
-    ['毛细血管袢开放好', '毛细血管袢尚开放', '毛细血管袢开放可', '毛细血管袢开放尚佳', ''], '毛细血管袢开放佳'))
 # （2）查看共有多少条记录出现关键词“毛细血管袢……开放”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢[\u4E00-\u9FA5]+开放')]))  # 46
 # （3）查看共有多少条记录出现关键词“毛细血管袢尚开放”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢尚开放')]))  # 46
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('尚开放')]))  # 46
 # 注：出现关键词“毛细血管袢……开放”刚好46条记录均为“毛细血管袢尚开放”
 # （4）查看共有多少条记录出现关键词“毛细血管袢……佳”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放[\u4E00-\u9FA5]+佳')]))  # 40
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放[\u4E00-\u9FA5]+佳')]))  # 40
 # （5）查看共有多少条记录出现关键词“毛细血管袢欠佳”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放欠佳')]))  # 29
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放欠佳')]))  # 40
 # （6）查看共有多少条记录出现关键词“毛细血管袢不佳”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放不佳')]))  # 7
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放不佳')]))  # 22
 # （7）查看共有多少条记录出现关键词“毛细血管袢尚佳”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚佳')]))  # 4
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放尚佳')]))  # 4
 # 注：出现关键词“毛细血管袢……佳”刚好40条记录包含了“毛细血管袢开放欠佳”、“毛细血管袢开放不佳”、“毛细血管袢开放尚佳”三种描述情况
-# （8）查看共有多少条记录出现关键词“袢腔狭窄”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('袢腔狭窄')]))  # 35
-# （9）将出现关键词“袢腔狭窄”的记录均改为“毛细血管袢开放差”
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('袢腔狭窄', '毛细血管袢开放差'))
-# （8）查看共有多少条记录出现关键词“毛细血管袢开放，”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放，')]))  # 65
-# （9）查看共有多少条记录出现关键词“毛细血管袢开放。”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放。')]))  # 2
-# （10）查看共有多少条记录出现关键词“毛细血管袢开放可，”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放可，')]))  # 115
-# （11）查看共有多少条记录出现关键词“毛细血管袢开放、”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放、')]))  # 396
-# （12）查看共有多少条记录出现关键词“毛细血管袢开放尚可”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚可')]))  # 89
-# （13）查看共有多少条记录出现关键词“毛细血管袢开放尚好”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚好')]))  # 49
-# （14）查看共有多少条记录出现关键词“毛细血管袢开放差”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放差')]))  # 36
-#
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放好')]))  # 275
-
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放佳')]))  # 8
-
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢扭曲')]))  # 2
-
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('袢腔开放欠佳')]))  # 8
-
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('、开放欠佳')]))  # 3
-# （9）将出现关键词“开放欠佳”的记录均改为“毛细血管袢开放欠佳”
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('开放欠佳', '毛细血管袢开放欠佳'))
-# （10）将出现关键词“僵硬”的记录均改为“毛细血管袢开放欠佳”
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('僵硬', '毛细血管袢开放欠佳'))
-# 毛细血管袢开欠佳，
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('毛细血管袢开欠佳', '毛细血管袢开放欠佳'))
-
-print(len(sz_data[(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢') & sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('僵硬'))]))  # 2
-
-x = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放佳')]
-
-x[~(x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢扭曲') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚好') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放。') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢尚开放') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放欠佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放不佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚佳') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放，') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放可，') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放、') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放尚可') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放差') | x['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('毛细血管袢开放好'))]
+# （8）将出现“开放欠佳”、“开放不佳”、“开欠佳”的记录修改为“开放差”
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('开放欠佳', '开放差'))  # 40
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('开放不佳', '开放差'))  # 22
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('开欠佳', '开放差'))  # 2
+# （9）将存在“开放差”的记录确定为“毛细血管管腔”为1
+sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('开放差'), '毛细血管管腔'] = 1
+# （10）将“毛细血管管腔”列为Nan值的记录改为0
+sz_data['毛细血管管腔'] = sz_data['毛细血管管腔'].fillna(0)
+# 总结：（毛细血管管腔、记录数量）
+# 0.0    1130
+# 1.0      65
 
 
 """
-“系膜细胞”
+“系膜区”
 """
+# 13.匹配--系膜区
+# （1）查看共有多少条记录出现关键词“系膜区”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜区')]))  # 1167
+# （2）提取包含关键词“系膜区”的记录，创建ximoqu表
+ximoqu = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜区')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
+# （3）在ximoqu表中增加“系膜区”一列，内容即提取系膜区所在句子
+ximoqu['系膜区'] = "系膜区" + ximoqu['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('系膜区')[1].split('，')[0])
+# （4）去除系膜区中出现的数字，以免对后续提取造成干扰
+ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在“系膜区”列中找到关键词“纤维化”、“轻”、“中”、“重”，对应替换成需要提取的数字
+ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('纤维化', '1纤维化'))
+ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('轻', '0轻'))
+ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('中', '1中'))
+ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('重', '2重'))
 
-
-
+ximoqu.to_csv("/home/lxl/pythonProject/Extraction-infomation/tt.tsv", encoding='utf8', sep='\t', index=False)
 
 """
 “肾小管萎缩”共有种出现情况：
