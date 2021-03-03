@@ -353,7 +353,7 @@ ximoqu['系膜区'] = ximoqu['系膜区1'].str.extract('(\d+)')
 ximoqu.loc[1189, '系膜区'] = 0
 # （8）将ximoqu表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
 sz_data = pd.merge(sz_data, ximoqu, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
-# （9）将ximoqu表中“系膜区1”的Nan值填充为0
+# （9）“系膜区”的Nan值填充为0
 sz_data['系膜区'] = sz_data['系膜区'].fillna(0)
 # （10）删除“系膜区1”列
 del sz_data['系膜区1']
@@ -403,43 +403,8 @@ sz_data['系膜基质'] = sz_data['系膜基质'].fillna(0)
 # 1.0    643
 # 0.0    552
 
-
 """
-“肾小管萎缩”共有种出现情况：
-a.
-b.
-c.
-d.
-e.
-f.
-g.
-h.未描述肾小管萎缩
-"""
-# 匹配--肾小管萎缩
-# （1）查看共有多少条记录出现“小管萎缩”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小管萎缩')]))  # 1150
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')]))  # 1150
-#
-
-"""
-‘间质纤维化“共有种出现情况：
-a.
-b.
-c.
-d.
-e.
-f.
-g.未描述间质纤维化
-"""
-# 匹配--间质纤维化
-# （1）查看共有多少条记录出现“纤维化”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1150
-
-
-
-
-"""
-“免疫复合物”共有13种出现情况：
+“免疫复合物”共有13种出现情况：（医生对其定义不清晰，不予提取）
 a.PASM-Masson：毛细血管袢腔内见嗜复红物。
 b.PASM-Masson：肾小球节段袢分层、嗜银强弱不一。
 c.PASM-Masson：偶见上皮侧毛刺状嗜银物。
@@ -466,8 +431,6 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('阴
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('不确切')]))  # 1
 # （4）查看共有多少记录出现关键词“嗜红物沉积”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜红物沉积')]))  # 2
-# （5）查看共有多少记录出现关键词“嗜银物”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜银物')]))  # 6
 # （6）查看共有多少记录出现关键词“嗜复红物”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜复红物')]))  # 813
 # （7）查看共有多少记录出现关键词“嗜银”
@@ -498,30 +461,62 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及内皮下少量嗜复红物沉积')]))  # 1
 
 
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧嗜复红物沉积')]))  # 125
+"""
+“肾小管萎缩”共有种出现情况：
+a.
+b.
+c.
+d.
+e.
+f.
+g.
+h.未描述肾小管萎缩
+"""
+# 匹配--肾小管萎缩
+# （1）查看共有多少条记录出现“小管萎缩”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小管萎缩')]))  # 1150
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')]))  # 1158
+# （2）提取包含关键词“萎缩”的记录，创建weisuo表
+weisuo = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
+# （3）在ximoqu表中增加“系膜区”一列，内容即提取系膜区所在句子
+weisuo['萎缩'] = weisuo['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('萎缩')[0].split('，')[-1]) + '萎缩'
+# （4）去除萎缩中出现的数字，以免对后续提取造成干扰
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在ximoqu表中“系膜区”列中找到关键词“轻”、“中”、“重”，对应替换成需要提取的数字
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('多灶', '多灶2'))
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('灶性', '1灶性'))
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('小片状', '小片2状'))
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('片状', '3片状'))
+weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('大量', '3大量'))
+# （6）提取出weisuo表中“萎缩”列的数字
+weisuo['肾小管萎缩'] = weisuo['萎缩'].str.extract('(\d+)')
+# （7）将weisuo表中的Nan中填充为1
+weisuo['肾小管萎缩'] = weisuo['肾小管萎缩'].fillna(1)
+# （8）将出现的“未见肾小管萎缩”、“肾小管未见萎缩”、“肾小管未见明显萎缩”等的“肾小管萎缩”列值均改为0
+weisuo.loc[weisuo['萎缩'].str.contains('未见'), '肾小管萎缩'] = 0
+# （9）删除weisuo表中的“萎缩”列
+del weisuo['萎缩']
+# （10）将weisuo表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
+sz_data = pd.merge(sz_data, weisuo, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
+# （11）将“萎缩不明显”记录的“肾小管萎缩”列值更改为0
+sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩不明显'), '肾小管萎缩'] = 0
+# （12）将“肾小管萎缩”列值填充为0
+sz_data['肾小管萎缩'] = sz_data['肾小管萎缩'].fillna(0)
 
-s = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧[\u4E00-\u9FA5]+嗜复红物沉积')]
-s[~(s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧大量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧少量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧较多嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧偶见嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区节段嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区少量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区大量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及系膜区较多嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧节段嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧送检嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧疑似少量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内少量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及基膜内大量嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧弥漫嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧似见节段嗜复红物沉积') |
-    s['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上皮侧及内皮下少量嗜复红物沉积')
-    )]
+"""
+‘间质纤维化“共有种出现情况：
+a.
+b.
+c.
+d.
+e.
+f.
+g.未描述间质纤维化
+"""
+# 匹配--间质纤维化
+# （1）查看共有多少条记录出现“纤维化”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1150
 
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜区[\u4E00-\u9FA5]+沉积')]))  # 7
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('偶见嗜碱性物')]))  # 12
-print(len(sz_data[(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('偶见嗜碱性物') & sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('阴性'))]))  # 12
 
 
 """
@@ -541,35 +536,33 @@ d.散在极少量单个核细胞分布
 节段硬化小球比例：节段性硬化数目/肾小球总数
 新月体小球比例：新月体小球数目/肾小球总数
 """
-# 计算硬化小球比例
-# （1）硬化小球比例：球性硬化小球数/肾小球总数
-sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
-# （2）解决出现分母为0计算出的结果
-sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# （3）将Nan值填充为0
-sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
-
-# 计算节段硬化小球比例
-# （1）节段硬化小球比例：节段性硬化数目/肾小球总数
-sz_data['节段硬化小球比例'] = sz_data['节段性硬化数目'] / sz_data['肾小球总数']
-# （2）解决出现分母为0计算出的结果
-sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# （3）将Nan值填充为0
-sz_data['节段硬化小球比例'] = sz_data['节段硬化小球比例'].fillna(0)
-
-# 计算新月体小球比例
-# （1）新月体小球比例：新月体小球数目/肾小球总数
-sz_data['新月体小球比例'] = sz_data['新月体小球数目'] / sz_data['肾小球总数']
-# （2）解决出现分母为0计算出的结果
-sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# （3）将Nan值填充为0
-sz_data['新月体小球比例'] = sz_data['新月体小球比例'].fillna(0)
-
-
-
-sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_HIS.xlsx", encoding='utf8', index=False)
+# # 计算硬化小球比例
+# # （1）硬化小球比例：球性硬化小球数/肾小球总数
+# sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
+# # （2）解决出现分母为0计算出的结果
+# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# # （3）将Nan值填充为0
+# sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
+#
+# # 计算节段硬化小球比例
+# # （1）节段硬化小球比例：节段性硬化数目/肾小球总数
+# sz_data['节段硬化小球比例'] = sz_data['节段性硬化数目'] / sz_data['肾小球总数']
+# # （2）解决出现分母为0计算出的结果
+# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# # （3）将Nan值填充为0
+# sz_data['节段硬化小球比例'] = sz_data['节段硬化小球比例'].fillna(0)
+#
+# # 计算新月体小球比例
+# # （1）新月体小球比例：新月体小球数目/肾小球总数
+# sz_data['新月体小球比例'] = sz_data['新月体小球数目'] / sz_data['肾小球总数']
+# # （2）解决出现分母为0计算出的结果
+# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# # （3）将Nan值填充为0
+# sz_data['新月体小球比例'] = sz_data['新月体小球比例'].fillna(0)
 
 
+
+# sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_HIS.xlsx", encoding='utf8', index=False)
 
 
 
@@ -577,92 +570,4 @@ sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after
 
 
 
-len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小结')]) + len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('未见肾小球')])  # 1089、18
 
-
-sz_data['测试1'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.extract('[，。？！,.?!]*(\d+|[一二三四五六七八九十]+)\D*小球')
-
-x = 0
-for i in range(len(sz_data)):
-    if sz_data.iloc[i]['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].find(u'个肾小球') != -1:
-        y = 0
-    elif sz_data.iloc[i]['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].find(u'未见肾小球') != -1:
-        x += 1
-        print(sz_data[sz_data.index == i])
-    else:
-        y = 0
-
-
-text1 = sz_data.iloc[0]['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']
-text2 = sz_data.iloc[1]['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']
-
-text1.split('光镜')
-sz_data[~(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小球') |
-          sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('个肾小球'))]  # 1089
-sz_data[~sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('ASM-Masson')]  # 1179
-
-
-
-
-
-
-import re
-
-s = "该通知于发布日起生效，请申请人于2017年8月30日前将材料递交到管理中心。" \
-    "联系电话：（0355）3849512， (0355)39482753， 010 38492045，010-39481253， 0242—24891023，010——39281234，69384023，400-820-8820" \
-    "联系人：陈先生，王小姐"
-tel = re.findall(r'\d{7,8}', s)
-
-test = pd.DataFrame({'name': [101, 102, 103, 104, 105, 106, 107, 108, 109],
-                     'dis': ['皮髓质肾组织1条，5个肾小球见2个新月体。',
-                             '皮髓质肾组织1条。5个肾小球见2个节段性纤维细胞性新月体。',
-                             '皮髓质肾组织1条。5个肾小球见2个节段纤维新月体。',
-                             '皮质肾组织2条，34个肾小球中见3个球性废弃，1个细胞性、9个纤维性及5个纤维性新月体',
-                             '皮髓质肾组织1条。36个肾小球中2个节段性新月体，其中1个为纤维性，另1个为细胞纤维性。',
-                             '皮质肾组织1条，12个肾小球，体积轻度增大，可见5个细胞性新月体。',
-                             '皮质及皮髓质肾组织2条。18个肾小球中见7个纤维细胞性 及2个细胞性新月体。',
-                             '皮质及皮髓质肾组织2条。18个肾小球中见5个细胞性及9个纤维细胞性新月体。',
-                             '皮质和皮髓肾组织各1条，15个肾小球中3个球性废弃2个节段新月体形成。',
-                             ]},
-                    index=[0, 1, 2, 3, 4, 5, 6, 7, 8])
-
-
-test['新月体小球数目'] = test['dis'].str.extract('.*?(\d+)\D*新月体')
-test['新月体小球数目'] = test['新月体小球数目'].astype(int)
-# test[['新月体1', '新月体2', '新月体3', '新月体4']] = test['dis'].str.extract('.*?(\d+)\D*[纤维|细胞]\D*(\d+)\D*[纤维|细胞]\D*(\d+)\D*[纤维|细胞]\D*(\d+)\D*[纤维|细胞]\D*新月体')
-test[['新月体1', '新月体2']] = test['dis'].str.extract('.*?(\d+)\D*[纤维|细胞]\D*(\d+)\D*[纤维|细胞]\D*新月体')
-test[['新月体1', '新月体2']] = test[['新月体1', '新月体2']].fillna(0)
-test['新月体12'] = test['新月体1'].astype(int) + test['新月体2'].astype(int)
-test = test.drop(test[['新月体1', '新月体2']], axis=1)
-test['新月体小球数目'] = test.apply(lambda x: max(x['新月体小球数目'], x['新月体12']), axis=1)
-
-# sz_data['对比结果'] = sz_data[['肾小球总数', '球性硬化小球数']].apply(lambda x: x['肾小球总数'] == x['球性硬化小球数'], axis=1)
-
-
-
-
-
-
-re.findall(r'\d{1}', '皮髓质肾组织2条，18个肾小球中见3个球性废弃。'
-                '余肾小球系膜区节段轻度增宽，系膜细胞增殖、基质增多，毛细血管袢开放好，内皮细胞未见明显增殖，肾小囊壁节段增厚、分层。'
-                'PASM-Masson：系膜区节段少量嗜复红物沉积。肾小管间质病变尚轻，偶见肾小管萎缩，间质纤维化不明显，极少量单个核、浆细胞散在浸润。血管未见明显病变。')
-
-
-ximoqu  = '光镜：皮髓质肾组织2条，18个肾小球中见3个球性废弃。余肾小球系膜区节段轻中度增宽，系膜细胞增殖、基质增多，毛细血管袢开放好，内皮细胞未见明显增殖，肾小囊壁节段增厚、分层。' \
-          'PASM-Masson：系膜区节段少量嗜复红物沉积。肾小管间质病变尚轻，偶见肾小管萎缩，间质纤维化不明显，极少量单个核、浆细胞散在浸润。血管未见明显病变。'
-if ximoqu.find(u'系膜区') != -1:
-    regex_str = ".*?(系膜区[\u4E00-\u9FA5]+增宽)"
-    ximoqu = re.match(regex_str, ximoqu).group(1)
-    if ximoqu.find(u'未见') != -1:
-        x = 0
-        print("0")
-    elif ximoqu.find(u'轻度') != -1:
-        x = 1
-        print("1")
-    elif ximoqu.find(u'轻中度') != -1:
-        x = 2
-        print("2")
-    else:
-        print("0")
-else:
-    x = 0
