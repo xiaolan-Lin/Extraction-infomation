@@ -10,8 +10,8 @@ EMPI患者主索引
 7.系膜区     √
 8.系膜细胞     √
 9.系膜基质     √
-10.免疫复合物
-11.肾小管萎缩
+10.免疫复合物     ×
+11.肾小管萎缩     √
 12.间质纤维化
 13.间质炎症细胞浸润
 14.间质血管病变
@@ -462,15 +462,7 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上
 
 
 """
-“肾小管萎缩”共有种出现情况：
-a.
-b.
-c.
-d.
-e.
-f.
-g.
-h.未描述肾小管萎缩
+“肾小管萎缩”
 """
 # 匹配--肾小管萎缩
 # （1）查看共有多少条记录出现“小管萎缩”
@@ -478,7 +470,7 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')]))  # 1158
 # （2）提取包含关键词“萎缩”的记录，创建weisuo表
 weisuo = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
-# （3）在ximoqu表中增加“系膜区”一列，内容即提取系膜区所在句子
+# （3）在ximoqu表中增加“萎缩”一列，内容即提取萎缩所在句子
 weisuo['萎缩'] = weisuo['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('萎缩')[0].split('，')[-1]) + '萎缩'
 # （4）去除萎缩中出现的数字，以免对后续提取造成干扰
 weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
@@ -492,21 +484,28 @@ weisuo['萎缩'] = weisuo['萎缩'].apply(lambda x: x.replace('大量', '3大量
 weisuo['肾小管萎缩'] = weisuo['萎缩'].str.extract('(\d+)')
 # （7）将weisuo表中的Nan中填充为1
 weisuo['肾小管萎缩'] = weisuo['肾小管萎缩'].fillna(1)
-# （8）将出现的“未见肾小管萎缩”、“肾小管未见萎缩”、“肾小管未见明显萎缩”等的“肾小管萎缩”列值均改为0
+# （8）将weisuo表中的“肾小管萎缩”列值转换为int类型
+weisuo['肾小管萎缩'] = weisuo['肾小管萎缩'].astype(int)
+# （9）将出现的“未见肾小管萎缩”、“肾小管未见萎缩”、“肾小管未见明显萎缩”等的“肾小管萎缩”列值均改为0
 weisuo.loc[weisuo['萎缩'].str.contains('未见'), '肾小管萎缩'] = 0
-# （9）删除weisuo表中的“萎缩”列
+# （10）删除weisuo表中的“萎缩”列
 del weisuo['萎缩']
-# （10）将weisuo表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
+# （11）将weisuo表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
 sz_data = pd.merge(sz_data, weisuo, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
-# （11）将“萎缩不明显”记录的“肾小管萎缩”列值更改为0
+# （12）将“萎缩不明显”记录的“肾小管萎缩”列值更改为0
 sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩不明显'), '肾小管萎缩'] = 0
-# （12）将“肾小管萎缩”列值填充为0
+# （13）将“肾小管萎缩”列值填充为0
 sz_data['肾小管萎缩'] = sz_data['肾小管萎缩'].fillna(0)
+# 总结：（神小管萎缩、记录数量）
+# 1.0    963
+# 3.0    105
+# 2.0     66
+# 0.0     61
 
 """
 ‘间质纤维化“共有种出现情况：
-a.
-b.
+a.间质纤维化均不明显
+b.纤维化不明显
 c.
 d.
 e.
@@ -515,9 +514,36 @@ g.未描述间质纤维化
 """
 # 匹配--间质纤维化
 # （1）查看共有多少条记录出现“纤维化”
-print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1150
-
-
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1173
+# （2）提取包含关键词“纤维化”的记录，创建xianweihua表
+xianweihua = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
+# （3）在xianweihua表中增加“纤维化”一列，内容即提取纤维化所在句子
+xianweihua['纤维化'] = '纤维化' + xianweihua['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('纤维化')[1].split('，')[0])
+# （4）去除纤维化中出现的数字，以免对后续提取造成干扰
+xianweihua['纤维化'] = xianweihua['纤维化'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在xianweihua表中“系膜区”列中找到关键词“轻”、“中”、“重”，对应替换成需要提取的数字
+xianweihua['纤维化'] = xianweihua['纤维化'].apply(lambda x: x.replace('+++', '3'))
+xianweihua['纤维化'] = xianweihua['纤维化'].apply(lambda x: x.replace('++', '2'))
+xianweihua['纤维化'] = xianweihua['纤维化'].apply(lambda x: x.replace('+', '1'))
+# （6）提取出xianweihua表中“纤维化”列的数字
+xianweihua['间质纤维化'] = xianweihua['纤维化'].str.extract('(\d+)')
+# （7）将xianweihua表中的Nan中填充为1
+xianweihua['间质纤维化'] = xianweihua['间质纤维化'].fillna(1)
+# （8）将xianweihua表中的“肾小管萎缩”列值转换为int类型
+xianweihua['间质纤维化'] = xianweihua['间质纤维化'].astype(int)
+# （9）将出现的“纤维化不明显”、“肾小管未见萎缩”等的“间质纤维化”列值均改为0
+xianweihua.loc[xianweihua['纤维化'].str.contains('不明显'), '间质纤维化'] = 0
+# （10）删除xianweihua表中的“纤维化”列
+del xianweihua['纤维化']
+# （11）将xianweihua表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
+sz_data = pd.merge(sz_data, xianweihua, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
+# （12）将“肾小管萎缩”列值填充为0
+sz_data['间质纤维化'] = sz_data['间质纤维化'].fillna(0)
+# 总结：（间质纤维化、记录数量）
+# 0.0    538
+# 1.0    530
+# 3.0     66
+# 2.0     61
 
 """
 ”间质炎症细胞浸润“共有种出现情况：
