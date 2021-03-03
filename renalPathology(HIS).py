@@ -12,7 +12,7 @@ EMPI患者主索引
 9.系膜基质     √
 10.免疫复合物     ×
 11.肾小管萎缩     √
-12.间质纤维化
+12.间质纤维化     √
 13.间质炎症细胞浸润
 14.间质血管病变
 15.诊断            √
@@ -503,14 +503,13 @@ sz_data['肾小管萎缩'] = sz_data['肾小管萎缩'].fillna(0)
 # 0.0     61
 
 """
-‘间质纤维化“共有种出现情况：
+‘间质纤维化“共有6种出现情况：
 a.间质纤维化均不明显
 b.纤维化不明显
-c.
-d.
-e.
-f.
-g.未描述间质纤维化
+c.纤维化+
+d.纤维化++
+e.纤维化+++
+f.未描述间质纤维化
 """
 # 匹配--间质纤维化
 # （1）查看共有多少条记录出现“纤维化”
@@ -537,7 +536,7 @@ xianweihua.loc[xianweihua['纤维化'].str.contains('不明显'), '间质纤维�
 del xianweihua['纤维化']
 # （11）将xianweihua表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
 sz_data = pd.merge(sz_data, xianweihua, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
-# （12）将“肾小管萎缩”列值填充为0
+# （12）将“间质纤维化”列值填充为0
 sz_data['间质纤维化'] = sz_data['间质纤维化'].fillna(0)
 # 总结：（间质纤维化、记录数量）
 # 0.0    538
