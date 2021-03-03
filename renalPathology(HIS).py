@@ -328,7 +328,11 @@ sz_data['毛细血管管腔'] = sz_data['毛细血管管腔'].fillna(0)
 
 
 """
-“系膜区”
+“系膜区”提取规则：
+“轻”提取1
+“中”提取2
+“重”提取3
+其余0
 """
 # 13.匹配--系膜区
 # （1）查看共有多少条记录出现关键词“系膜区”
@@ -336,16 +340,28 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系
 # （2）提取包含关键词“系膜区”的记录，创建ximoqu表
 ximoqu = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜区')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
 # （3）在ximoqu表中增加“系膜区”一列，内容即提取系膜区所在句子
-ximoqu['系膜区'] = "系膜区" + ximoqu['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('系膜区')[1].split('，')[0])
+ximoqu['系膜区1'] = "系膜区" + ximoqu['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('系膜区')[1].split('，')[0])
 # （4）去除系膜区中出现的数字，以免对后续提取造成干扰
-ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
-# （5）在“系膜区”列中找到关键词“纤维化”、“轻”、“中”、“重”，对应替换成需要提取的数字
-ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('纤维化', '1纤维化'))
-ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('轻', '0轻'))
-ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('中', '1中'))
-ximoqu['系膜区'] = ximoqu['系膜区'].apply(lambda x: x.replace('重', '2重'))
-
-ximoqu.to_csv("/home/lxl/pythonProject/Extraction-infomation/tt.tsv", encoding='utf8', sep='\t', index=False)
+ximoqu['系膜区1'] = ximoqu['系膜区1'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在ximoqu表中“系膜区”列中找到关键词“轻”、“中”、“重”，对应替换成需要提取的数字
+ximoqu['系膜区1'] = ximoqu['系膜区1'].apply(lambda x: x.replace('轻', '1轻'))
+ximoqu['系膜区1'] = ximoqu['系膜区1'].apply(lambda x: x.replace('中', '2中'))
+ximoqu['系膜区1'] = ximoqu['系膜区1'].apply(lambda x: x.replace('重', '3重'))
+# （6）提取出ximoqu表中“系膜区”列的数字
+ximoqu['系膜区'] = ximoqu['系膜区1'].str.extract('(\d+)')
+# （7）检验纠错
+ximoqu.loc[1189, '系膜区'] = 0
+# （8）将ximoqu表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
+sz_data = pd.merge(sz_data, ximoqu, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
+# （9）将ximoqu表中“系膜区1”的Nan值填充为0
+sz_data['系膜区'] = sz_data['系膜区'].fillna(0)
+# （10）删除“系膜区1”列
+del sz_data['系膜区1']
+# 总结：（系膜区、记录数量）
+# 1    651
+# 0    411
+# 2     95
+# 3     38
 
 """
 “肾小管萎缩”共有种出现情况：
