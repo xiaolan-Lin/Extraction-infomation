@@ -7,9 +7,9 @@ EMPI患者主索引
 4.节段性硬化数目     √
 5.内皮细胞增生     √
 6.毛细血管管腔     √
-7.系膜区
-8.系膜细胞
-9.系膜基质
+7.系膜区     √
+8.系膜细胞     √
+9.系膜基质     √
 10.免疫复合物
 11.肾小管萎缩
 12.间质纤维化
@@ -83,8 +83,8 @@ h.光镜：皮质肾组织1条。12小球中见1个球性废弃。
 # 7.匹配--肾小球总数
 # （1）查看共有多少条记录出现“未见肾小球”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('未见肾小球')]))  # 18
-# （2）“未见肾小球”18条记录，将“未见肾小球”修改为“0个肾小球”，便于后续正则提取
-sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('未见肾小球', '0个肾小球'))
+# （2）“未见肾小球”18条记录，将“未见肾小球”修改为“0个未见肾小球”，便于后续正则提取
+sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'] = sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.replace('未见肾小球', '0个未见肾小球'))
 # （3）查看共有多少条记录出现“未见……肾小球”的书写情况
 print(len(sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('(未见[\u4E00-\u9FA5]+肾小球)')))
 # （4）提取肾小球总数
@@ -357,11 +357,52 @@ sz_data = pd.merge(sz_data, ximoqu, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,
 sz_data['系膜区'] = sz_data['系膜区'].fillna(0)
 # （10）删除“系膜区1”列
 del sz_data['系膜区1']
+# （11）“未见肾小球”无法提取系膜区信息，标记为“999”
+sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('未见肾小球'), '系膜区'] = 999
 # 总结：（系膜区、记录数量）
-# 1    651
-# 0    411
-# 2     95
-# 3     38
+# 1      650
+# 0      395
+# 2       95
+# 3       38
+# 999     17（未见肾小球）
+
+"""
+“系膜细胞”
+a.系膜细胞增殖
+b.系膜细胞增生
+c.系膜细胞及基质增殖
+d.未描述系膜细胞
+"""
+# （1）查看共有多少条记录出现关键词“系膜细胞”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜细胞')]))  # 608
+# （2）将存在“系膜细胞”的记录确定为“系膜细胞”为1
+sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜细胞'), '系膜细胞'] = 1
+# （3）将“系膜细胞”列为Nan值的记录改为0
+sz_data['系膜细胞'] = sz_data['系膜细胞'].fillna(0)
+# 总结：（系膜细胞、记录数量）
+# 1.0    608
+# 0.0    587
+
+"""
+“系膜基质”
+a.基质增多
+b.系膜基质稍增多
+c.系膜细胞及基质增殖
+d.基质稍增多
+e.基质明显增多
+f.基质增加为主
+g.未描述系膜细胞
+"""
+# （1）查看共有多少条记录出现关键词“系膜细胞”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('基质')]))  # 643
+# （2）将存在“基质”的记录确定为“系膜基质”为1
+sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('基质'), '系膜基质'] = 1
+# （3）将“系膜基质”列为Nan值的记录改为0
+sz_data['系膜基质'] = sz_data['系膜基质'].fillna(0)
+# 总结：（系膜基质、记录数量）
+# 1.0    643
+# 0.0    552
+
 
 """
 “肾小管萎缩”共有种出现情况：
