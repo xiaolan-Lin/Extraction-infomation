@@ -554,7 +554,6 @@ c.少量单个核细胞
 d.散在极少量单个核细胞分布
 e.较多单个核细胞分布并灶性聚集
 f.少量单个核细胞并小灶性聚集
-g.
 """
 # 19.匹配--间质炎症细胞浸润
 # （1）查看共有多少条记录出现“纤维化”
@@ -603,7 +602,7 @@ sz_data['间质炎症细胞浸润'] = sz_data['间质炎症细胞浸润'].fillna
 节段硬化小球比例：节段性硬化数目/肾小球总数
 新月体小球比例：新月体小球数目/肾小球总数
 """
-# 计算硬化小球比例
+# 20.计算硬化小球比例
 # （1）硬化小球比例：球性硬化小球数/肾小球总数
 sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
 # （2）解决出现分母为0计算出的结果
@@ -611,7 +610,7 @@ sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
 # （3）将Nan值填充为0
 sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
 
-# 计算节段硬化小球比例
+# 21.计算节段硬化小球比例
 # （1）节段硬化小球比例：节段性硬化数目/肾小球总数
 sz_data['节段硬化小球比例'] = sz_data['节段性硬化数目'] / sz_data['肾小球总数']
 # （2）解决出现分母为0计算出的结果
@@ -619,7 +618,7 @@ sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
 # （3）将Nan值填充为0
 sz_data['节段硬化小球比例'] = sz_data['节段硬化小球比例'].fillna(0)
 
-# 计算新月体小球比例
+# 22.计算新月体小球比例
 # （1）新月体小球比例：新月体小球数目/肾小球总数
 sz_data['新月体小球比例'] = sz_data['新月体小球数目'] / sz_data['肾小球总数']
 # （2）解决出现分母为0计算出的结果
@@ -628,7 +627,7 @@ sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
 sz_data['新月体小球比例'] = sz_data['新月体小球比例'].fillna(0)
 
 
-
+# 23.保存提取后的文件
 sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_HIS.xlsx", encoding='utf8', index=False)
 
 
