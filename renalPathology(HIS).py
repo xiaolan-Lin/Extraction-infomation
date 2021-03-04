@@ -13,8 +13,8 @@ EMPI患者主索引
 10.免疫复合物     ×
 11.肾小管萎缩     √
 12.间质纤维化     √
-13.间质炎症细胞浸润
-14.间质血管病变
+13.间质炎症细胞浸润     √
+14.间质血管病变     ×
 15.诊断            √
 16.硬化小球比例      √
 17.节段硬化小球比例   √
@@ -373,6 +373,7 @@ b.系膜细胞增生
 c.系膜细胞及基质增殖
 d.未描述系膜细胞
 """
+# 14.匹配--系膜细胞
 # （1）查看共有多少条记录出现关键词“系膜细胞”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('系膜细胞')]))  # 608
 # （2）将存在“系膜细胞”的记录确定为“系膜细胞”为1
@@ -393,7 +394,8 @@ e.基质明显增多
 f.基质增加为主
 g.未描述系膜细胞
 """
-# （1）查看共有多少条记录出现关键词“系膜细胞”
+# 15.匹配--系膜基质
+# （1）查看共有多少条记录出现关键词“基质”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('基质')]))  # 643
 # （2）将存在“基质”的记录确定为“系膜基质”为1
 sz_data.loc[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('基质'), '系膜基质'] = 1
@@ -422,7 +424,7 @@ n.PASM-Masson：内皮下及系膜区少量、上皮侧偶见嗜复红物沉积�
 o.PASM-Masson：上皮侧及系膜区节段嗜复红物沉积。
 p.PASM-Masson：肾小球上皮侧及系膜区少量嗜复红物沉积，
 """
-# 匹配--嗜复红物沉积
+# 16.匹配--嗜复红物沉积
 # （1）查看共有多少条记录出现关键词“嗜复红物沉积”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('嗜复红物沉积')]))  # 805
 # （2）查看共有多少条记录出现关键词“阴性”
@@ -464,7 +466,7 @@ print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('上
 """
 “肾小管萎缩”
 """
-# 匹配--肾小管萎缩
+# 17.匹配--肾小管萎缩
 # （1）查看共有多少条记录出现“小管萎缩”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('小管萎缩')]))  # 1150
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('萎缩')]))  # 1158
@@ -511,7 +513,7 @@ d.纤维化++
 e.纤维化+++
 f.未描述间质纤维化
 """
-# 匹配--间质纤维化
+# 18.匹配--间质纤维化
 # （1）查看共有多少条记录出现“纤维化”
 print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('纤维化')]))  # 1173
 # （2）提取包含关键词“纤维化”的记录，创建xianweihua表
@@ -550,10 +552,50 @@ a.细胞散在浸润
 b.细胞浸润
 c.少量单个核细胞
 d.散在极少量单个核细胞分布
+e.较多单个核细胞分布并灶性聚集
+f.少量单个核细胞并小灶性聚集
+g.
 """
-
-
-
+# 19.匹配--间质炎症细胞浸润
+# （1）查看共有多少条记录出现“纤维化”
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('单个核细胞')]))  # 1011
+print(len(sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('核')]))  # 1166
+# （2）提取包含关键词“核”的记录，创建hexibao表
+hexibao = sz_data[sz_data['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].str.contains('核')][['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)']]
+# （3）在hexibao表中增加“核”一列，内容即提取核所在句子
+hexibao['细胞浸润1'] = hexibao['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('核')[0])
+hexibao['细胞浸润1'] = hexibao['细胞浸润1'].apply(lambda x: x.replace('。', '，'))
+hexibao['细胞浸润1'] = hexibao['细胞浸润1'].apply(lambda x: x.replace('；', '，'))
+hexibao['细胞浸润1'] = hexibao['细胞浸润1'].apply(lambda x: x.replace('、', '，'))
+hexibao['细胞浸润1'] = hexibao['细胞浸润1'].apply(lambda x: x.split('，')[-1])
+hexibao['细胞浸润2'] = '核' + hexibao['DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'].apply(lambda x: x.split('核')[1])
+hexibao['细胞浸润2'] = hexibao['细胞浸润2'].apply(lambda x: x.replace('，', '。'))
+hexibao['细胞浸润2'] = hexibao['细胞浸润2'].apply(lambda x: x.replace('；', '。'))
+hexibao['细胞浸润2'] = hexibao['细胞浸润2'].apply(lambda x: x.split('。')[0])
+hexibao['细胞浸润'] = hexibao['细胞浸润1'] + hexibao['细胞浸润2']
+hexibao = hexibao.drop(hexibao[['细胞浸润1', '细胞浸润2']], axis=1)
+# （4）去除“细胞浸润”中出现的数字，以免对后续提取造成干扰
+hexibao['细胞浸润'] = hexibao['细胞浸润'].apply(lambda x: x.translate(str.maketrans('', '', digits)))
+# （5）在hexibao表中“系膜区”列中找到关键词“轻”、“中”、“重”，对应替换成需要提取的数字
+hexibao['细胞浸润'] = hexibao['细胞浸润'].apply(lambda x: x.replace('较多', '2'))
+hexibao['细胞浸润'] = hexibao['细胞浸润'].apply(lambda x: x.replace('大量', '2'))
+hexibao['细胞浸润'] = hexibao['细胞浸润'].apply(lambda x: x.replace('中等量', '1'))
+# （6）提取出hexibao表中“细胞浸润”列的数字
+hexibao['间质炎症细胞浸润'] = hexibao['细胞浸润'].str.extract('(\d+)')
+# （7）将hexibao表中的Nan中填充为0
+hexibao['间质炎症细胞浸润'] = hexibao['间质炎症细胞浸润'].fillna(0)
+# （8）将hexibao表中的“间质炎症细胞浸润”列值转换为int类型
+hexibao['间质炎症细胞浸润'] = hexibao['间质炎症细胞浸润'].astype(int)
+# （9）删除“细胞浸润”列
+del hexibao['细胞浸润']
+# （10）将hexibao表与sz_data表进行“EMPI_ID”、“DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)”列外连接合并
+sz_data = pd.merge(sz_data, hexibao, on=['EMPI_ID', 'DBMS_LOB.SUBSTR(A.DIAG_DESC,4000)'], how='left')
+# （11）将“间质炎症细胞浸润”列值填充为0
+sz_data['间质炎症细胞浸润'] = sz_data['间质炎症细胞浸润'].fillna(0)
+# 总结：（间质炎症细胞浸润、记录数量）
+# 0.0    969
+# 2.0    221
+# 1.0      5
 
 """
 计算指标
@@ -561,33 +603,33 @@ d.散在极少量单个核细胞分布
 节段硬化小球比例：节段性硬化数目/肾小球总数
 新月体小球比例：新月体小球数目/肾小球总数
 """
-# # 计算硬化小球比例
-# # （1）硬化小球比例：球性硬化小球数/肾小球总数
-# sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
-# # （2）解决出现分母为0计算出的结果
-# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# # （3）将Nan值填充为0
-# sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
-#
-# # 计算节段硬化小球比例
-# # （1）节段硬化小球比例：节段性硬化数目/肾小球总数
-# sz_data['节段硬化小球比例'] = sz_data['节段性硬化数目'] / sz_data['肾小球总数']
-# # （2）解决出现分母为0计算出的结果
-# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# # （3）将Nan值填充为0
-# sz_data['节段硬化小球比例'] = sz_data['节段硬化小球比例'].fillna(0)
-#
-# # 计算新月体小球比例
-# # （1）新月体小球比例：新月体小球数目/肾小球总数
-# sz_data['新月体小球比例'] = sz_data['新月体小球数目'] / sz_data['肾小球总数']
-# # （2）解决出现分母为0计算出的结果
-# sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-# # （3）将Nan值填充为0
-# sz_data['新月体小球比例'] = sz_data['新月体小球比例'].fillna(0)
+# 计算硬化小球比例
+# （1）硬化小球比例：球性硬化小球数/肾小球总数
+sz_data['硬化小球比例'] = sz_data['球性硬化小球数'] / sz_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+sz_data['硬化小球比例'] = sz_data['硬化小球比例'].fillna(0)
+
+# 计算节段硬化小球比例
+# （1）节段硬化小球比例：节段性硬化数目/肾小球总数
+sz_data['节段硬化小球比例'] = sz_data['节段性硬化数目'] / sz_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+sz_data['节段硬化小球比例'] = sz_data['节段硬化小球比例'].fillna(0)
+
+# 计算新月体小球比例
+# （1）新月体小球比例：新月体小球数目/肾小球总数
+sz_data['新月体小球比例'] = sz_data['新月体小球数目'] / sz_data['肾小球总数']
+# （2）解决出现分母为0计算出的结果
+sz_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+# （3）将Nan值填充为0
+sz_data['新月体小球比例'] = sz_data['新月体小球比例'].fillna(0)
 
 
 
-# sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_HIS.xlsx", encoding='utf8', index=False)
+sz_data.to_excel("/home/lxl/pythonProject/Extraction-infomation/after_data/after_HIS.xlsx", encoding='utf8', index=False)
 
 
 
